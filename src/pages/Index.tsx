@@ -4,6 +4,106 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import p5 from "p5";
 
+// Define interfaces for our game entities
+interface PlayerType {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  r: number;
+  speed: number;
+  health: number;
+  shield: number;
+  thrusterAnimation: number;
+  animationFrame: number;
+  moveLeft: () => void;
+  moveRight: () => void;
+  shoot: () => void;
+  draw: () => void;
+}
+
+interface EnemyType {
+  x: number;
+  y: number;
+  r: number;
+  speed: number;
+  health: number;
+  type: number;
+  rotationAngle: number;
+  pulseValue: number;
+  update: () => void;
+  shoot: () => void;
+  draw: () => void;
+}
+
+interface BulletType {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  age: number;
+  isPlayerBullet: boolean;
+  update: () => void;
+  draw: () => void;
+}
+
+interface ParticleType {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  color: p5.Color;
+  size: number;
+  life: number;
+  maxLife: number;
+  update: () => void;
+  draw: () => void;
+  isDead: () => boolean;
+}
+
+interface ExplosionType {
+  x: number;
+  y: number;
+  size: number;
+  color: p5.Color;
+  particles: ParticleType[];
+  life: number;
+  update: () => void;
+  draw: () => void;
+  isDead: () => boolean;
+}
+
+interface PowerUpType {
+  x: number;
+  y: number;
+  r: number;
+  speed: number;
+  rotationAngle: number;
+  type: number;
+  update: () => void;
+  draw: () => void;
+}
+
+interface StarType {
+  x: number;
+  y: number;
+  size: number;
+  speed: number;
+  brightness: number;
+  blinkRate: number;
+  update: () => void;
+  draw: () => void;
+}
+
+interface ParallaxLayerType {
+  img: p5.Image;
+  speed: number;
+  y: number;
+  scale: number;
+  update: () => void;
+  draw: () => void;
+}
+
 const Index = () => {
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const p5ContainerRef = useRef<HTMLDivElement>(null);
@@ -22,29 +122,31 @@ const Index = () => {
 
   const sketch = (p: p5) => {
     // Global variables
-    let player;
-    let enemies = [];
-    let bullets = [];
-    let enemyBullets = [];
+    let player: PlayerType;
+    let enemies: EnemyType[] = [];
+    let bullets: BulletType[] = [];
+    let enemyBullets: BulletType[] = [];
     let score = 0;
     let lastShotTime = 0;
     let shootDelay = 300; // Reduced shooting cooldown for better gameplay
     let lastEnemySpawnTime = 0;
     let enemySpawnInterval = 1500; // Slightly faster enemy spawn rate
     let hitFlash = 0; // Visual effect for when player is hit
-    let backgroundParticles = [];
+    let backgroundParticles: ParticleType[] = [];
     let gameStarted = false;
     let gameOver = false;
-    let stars = [];
-    let explosions = [];
-    let gameFont;
+    let stars: StarType[] = [];
+    let explosions: ExplosionType[] = [];
+    let gameFont: p5.Font;
     let shieldOpacity = 0;
-    let powerUps = [];
+    let powerUps: PowerUpType[] = [];
     let powerUpLastSpawnTime = 0;
     let powerUpSpawnInterval = 10000; // Power-up spawn interval in ms
-    let playerImg, enemyImg, bulletImg, enemyBulletImg, particleImg, powerUpImg;
-    let gameOverSound, shootSound, enemyHitSound, playerHitSound, powerUpSound;
-    let parallaxLayers = [];
+    let playerImg: p5.Image, enemyImg: p5.Image, bulletImg: p5.Image, enemyBulletImg: p5.Image, 
+        particleImg: p5.Image, powerUpImg: p5.Image;
+    let gameOverSound: p5.SoundFile, shootSound: p5.SoundFile, enemyHitSound: p5.SoundFile, 
+        playerHitSound: p5.SoundFile, powerUpSound: p5.SoundFile;
+    let parallaxLayers: ParallaxLayerType[] = [];
     
     // Preload assets
     p.preload = () => {
@@ -53,8 +155,19 @@ const Index = () => {
     };
 
     // Player class representing the controllable robot
-    class Player {
-      constructor(x, y, w, h) {
+    class Player implements PlayerType {
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      r: number;
+      speed: number;
+      health: number;
+      shield: number;
+      thrusterAnimation: number;
+      animationFrame: number;
+
+      constructor(x: number, y: number, w: number, h: number) {
         this.x = x;           // X-coordinate (center)
         this.y = y;           // Y-coordinate (center)
         this.w = w;           // Width
@@ -170,8 +283,17 @@ const Index = () => {
     }
 
     // Enemy class representing AI robot enemies
-    class Enemy {
-      constructor(x, y, r, speed) {
+    class Enemy implements EnemyType {
+      x: number;
+      y: number;
+      r: number;
+      speed: number;
+      health: number;
+      type: number;
+      rotationAngle: number;
+      pulseValue: number;
+
+      constructor(x: number, y: number, r: number, speed: number) {
         this.x = x;           // X-coordinate (center)
         this.y = y;           // Y-coordinate (center)
         this.r = r;           // Radius
@@ -261,8 +383,15 @@ const Index = () => {
     }
 
     // Bullet class for both player and enemy projectiles
-    class Bullet {
-      constructor(x, y, vx, vy) {
+    class Bullet implements BulletType {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      age: number;
+      isPlayerBullet: boolean;
+
+      constructor(x: number, y: number, vx: number, vy: number) {
         this.x = x;    // X-coordinate
         this.y = y;    // Y-coordinate
         this.vx = vx;  // X-velocity
@@ -337,8 +466,17 @@ const Index = () => {
     }
 
     // Particle class for visual effects
-    class Particle {
-      constructor(x, y, vx, vy, color, size, life) {
+    class Particle implements ParticleType {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      color: p5.Color;
+      size: number;
+      life: number;
+      maxLife: number;
+
+      constructor(x: number, y: number, vx: number, vy: number, color: p5.Color, size: number, life: number) {
         this.x = x;
         this.y = y;
         this.vx = vx;
@@ -381,8 +519,15 @@ const Index = () => {
     }
     
     // Explosion class for destruction effects
-    class Explosion {
-      constructor(x, y, size, color) {
+    class Explosion implements ExplosionType {
+      x: number;
+      y: number;
+      size: number;
+      color: p5.Color;
+      particles: ParticleType[];
+      life: number;
+
+      constructor(x: number, y: number, size: number, color: p5.Color) {
         this.x = x;
         this.y = y;
         this.size = size;
@@ -433,8 +578,15 @@ const Index = () => {
     }
     
     // PowerUp class for in-game bonuses
-    class PowerUp {
-      constructor(x, y) {
+    class PowerUp implements PowerUpType {
+      x: number;
+      y: number;
+      r: number;
+      speed: number;
+      rotationAngle: number;
+      type: number;
+
+      constructor(x: number, y: number) {
         this.x = x;
         this.y = y;
         this.r = 15;
@@ -494,7 +646,14 @@ const Index = () => {
     }
 
     // Star class for background
-    class Star {
+    class Star implements StarType {
+      x: number;
+      y: number;
+      size: number;
+      speed: number;
+      brightness: number;
+      blinkRate: number;
+
       constructor() {
         this.x = p.random(p.width);
         this.y = p.random(p.height);
@@ -523,8 +682,13 @@ const Index = () => {
     }
     
     // ParallaxLayer class for depth in background
-    class ParallaxLayer {
-      constructor(img, speed, y, scale) {
+    class ParallaxLayer implements ParallaxLayerType {
+      img: p5.Image;
+      speed: number;
+      y: number;
+      scale: number;
+
+      constructor(img: p5.Image, speed: number, y: number, scale: number) {
         this.img = img;
         this.speed = speed;
         this.y = y;
@@ -563,7 +727,7 @@ const Index = () => {
       p.textFont(gameFont);
       
       // Initialize sounds
-      shootSound = new p.SoundFile("data:audio/wav;base64,UklGRpQEAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YXAEAABt7XDtgO2X7bLtzO3o7QHuGe4v7kXuWu5v7oLule6m7rjuyO7X7ufu9e4C7w7vGe8k7y3vNe877z/vQu9E70XvRO9C70HvPO857zPvLO8l7xzvE+8I7//u9O7p7tzu0e7E7rjuq+6d7o/ufu5w7mDuT+4+7izuGu4I7vXt4u3O7brtpu2R7X3taO1T7T7tKe0U7f/s6uzV7MHsrOyX7ILsb+xb7EfsM+wg7A7s/OvL6+3rAewV7CnsP+xV7GvsgeyX7K7sxezc7PPsCu0h7TjtT+1m7X3tle2r7cLt2O3v7Qbu3e0W7k7uh+7B7vru8+4s72XvnO/T7wLwA/AK8ynzXfOX88bztuLwEfE38VzxgfGm8cnx6/EL8irySPJm8oPyoPK78tbyzPG98djx8vEN8ib+NfNA80zzWPNi827zePOC847zmfOj86zzs/O5877zwvPG88jzyvPK88rzyfPI88bzw/PCYMsnyXzJy8kXynDKu8oEy0zLksvZyxrMV8yCzKbMxczdzO3M980HzQ/NFc0Z5M/NJc8zz0DPTc9Zz2TPbs93z3/Phc+Kz47Pkc+Sz5LPkc+Pz4zPiM+Ez3/Pes91z2/PaM9hz1nPUM9Gz0DPXeDHH8k9yVrJdMmOyabJvcnTyenJ/skSyiXKNspGylLKXcpoyoZ3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKPY/Njv2OLo9ej42PvI/qjxmQSJB3kKaQ1JD9KNeQN+BZ4HngmOC24NXg9+Kh4VLhM+EV4fngy+hn4kvCZMp4yozKoMqzysbK2crryv3KD8sgyzLKPMq6ysvK28ogy4nLmcupy7jLx8vWy+TL8sv/yyvJYsyNzLnM5Mpb79/vLvIw8vnyXPNA8+DzfPQZ9bb1VPbI9kH3u/c0+K74Jvmf+Rj6kfp0+3777/yp/WL+Hf/Y/2kAHAG0AYkCSgMNBNMEngVlBi4H9wfCCIwJVwoiC+4LugyGDVQOIg/xD7/QQfD/8Ijy/PJn87nzB/RT9J/06/Q19YD1y/UV9l72p/bw9jn3gffJ9xL4WviT+dX5DPpJ+oH6uvry+ir7YvuZ+9H7CPw//HX8q/zi/Bn9T/2F/bn95/0b/k/+g/63/uv+H/9S/4X/uP/r/x0AUACCALQAGQBbAAEBMgFjAZMBwgHxASACTwJ9AqsCKAKFAusCEAM0A1cDeQOaA7oDVwKXArUCGQMUBFAEpwT9BE8FoQXyBUMGlAbkBjQHgwfTBxcIYAiqCPIIOwmCCcgJDgpTCpcK2wo="); // Placeholder sound base64
+      shootSound = new p.SoundFile("data:audio/wav;base64,UklGRpQEAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YXAEAABt7XDtgO2X7bLtzO3o7QHuGe4v7kXuWu5v7oLule6m7rjuyO7X7ufu9e4C7w7vGe8k7y3vNe877z/vQu9E70XvRO9C70HvPO857zPvLO8l7xzvE+8I7//u9O7p7tzu0e7E7rjuq+6d7o/ufu5w7mDuT+4+7izuGu4I7vXt4u3O7brtpu2R7X3taO1T7T7tKe0U7f/s6uzV7MHsrOyX7ILsb+xb7EfsM+wg7A7s/OvL6+3rAewV7CnsP+xV7GvsgeyX7K7sxezc7PPsCu0h7TjtT+1m7X3tle2r7cLt2O3v7Qbu3e0W7k7uh+7B7vru8+4s72XvnO/T7wLwA/AK8ynzXfOX88bztuLwEfE38VzxgfGm8cnx6/EL8irySPJm8oPyoPK78tbyzPG98djx8vEN8ib+NfNA80zzWPNi827zePOC844zmfOj86zzs/O5877zwvPG88jzyvPK88rzyfPI88bzw/PCYMsnyXzJy8kXynDKu8oEy0zLksvZyxrMV8yCzKbMxczdzO3M980HzQ/NFc0Z5M/NJc8zz0DPTc9Zz2TPbs93z3/Phc+Kz47Pkc+Sz5LPkc+Pz4zPiM+Ez3/Pes91z2/PaM9hz1nPUM9Gz0DPXeDHH8k9yVrJdMmOyabJvcnTyenJ/skSyiXKNspGylLKXcpoyoZ3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKPY/Njv2OLo9ej42PvI/qjxmQSJB3kKaQ1JD9KNeQN+BZ4HngmOC24NXg9+Kh4VLhM+EV4fngy+hn4kvCZMp4yozKoMqzysbK2crryv3KD8sgyzLKPMq6ysvK28ogy4nLmcupy7jLx8vWy+TL8sv/yyvJYsyNzLnM5Mpb79/vLvIw8vnyXPNA8+DzfPQZ9bb1VPbI9kH3u/c0+K74Jvmf+Rj6kfp0+3377/yp/WL+Hf/Y/2kAHAG0AYkCSgMNBNMEngVlBi4H9wfCCIwJVwoiC+4LugyGDVQOIg/xD7/QQfD/8Ijy/PJn87nzB/RT9J/06/Q19YD1y/UV9l72p/bw9jn3gffJ9xL4WviT+dX5DPpJ+oH6uvry+ir7YvuZ+9H7CPw//HX8q/zi/Bn9T/2F/bn95/0b/k/+g/63/uv+H/9S/4X/uP/r/x0AUACCALQAGQBbAAEBMgFjAZMBwgHxASACTwJ9AqsCKAKFAusCEAM0A1cDeQOaA7oDVwKXArUCGQMUBFAEpwT9BE8FoQXyBUMGlAbkBjQHgwfTBxcIYAiqCPIIOwmCCcgJDgpTCpcK2wo="); // Placeholder sound base64
       if (shootSound) {
         shootSound.setVolume(0.2);
       }
@@ -672,7 +836,7 @@ const Index = () => {
           score = 0;
           lastShotTime = 0;
           lastEnemySpawnTime = 0;
-          lastPowerUpSpawnTime = 0;
+          powerUpLastSpawnTime = 0;
           hitFlash = 0;
           gameOver = false;
           
