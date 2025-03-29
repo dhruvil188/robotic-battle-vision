@@ -1,7 +1,6 @@
 
 import React from 'react';
-import { Progress } from "@/components/ui/progress";
-import { Heart } from "lucide-react";
+import { Shield, Heart } from "lucide-react";
 
 interface HealthBarProps {
   health: number;
@@ -20,16 +19,20 @@ const HealthBar: React.FC<HealthBarProps> = ({ health, maxHealth }) => {
   };
 
   return (
-    <div className="flex items-center gap-2 bg-black/60 p-2 rounded-lg backdrop-blur-sm shadow-lg">
-      <Heart className="text-red-500 animate-pulse" size={22} />
+    <div className="flex items-center gap-2 bg-black/60 p-2 rounded-lg backdrop-blur-sm shadow-lg border border-slate-700/50">
+      <Heart className="text-red-500 animate-pulse" size={20} />
       <div className="flex-1 w-44">
-        <div className="h-3 w-full bg-gray-800 rounded-full overflow-hidden">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs font-bold text-slate-300">HULL INTEGRITY</span>
+          <span className="text-xs font-bold text-white">{Math.floor(healthPercentage)}%</span>
+        </div>
+        <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
           <div 
             className={`h-full ${getHealthColor()} rounded-full transition-all duration-300`}
             style={{ width: `${healthPercentage}%` }}
           />
         </div>
-        <div className="text-xs font-bold text-white text-center mt-1">
+        <div className="text-xs font-bold text-slate-400 mt-1">
           {health}/{maxHealth}
         </div>
       </div>
