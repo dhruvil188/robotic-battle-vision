@@ -5,9 +5,10 @@ import { Zap, Circle } from 'lucide-react';
 interface WeaponIndicatorProps {
   currentWeapon: number;
   weaponNames: string[];
+  weaponLevels: number[];
 }
 
-const WeaponIndicator: React.FC<WeaponIndicatorProps> = ({ currentWeapon, weaponNames }) => {
+const WeaponIndicator: React.FC<WeaponIndicatorProps> = ({ currentWeapon, weaponNames, weaponLevels }) => {
   // Weapon specific colors
   const getWeaponColor = (index: number) => {
     const colors = ["text-blue-400", "text-orange-400", "text-green-400", "text-purple-400"];
@@ -20,13 +21,19 @@ const WeaponIndicator: React.FC<WeaponIndicatorProps> = ({ currentWeapon, weapon
     return <Circle size={18} className={getWeaponColor(index)} />;
   };
 
+  // Get current weapon level
+  const currentLevel = weaponLevels[currentWeapon];
+  const levelDisplay = currentLevel > 0 ? ` Mk${currentLevel}` : "";
+
   return (
     <div className="bg-black p-2 px-3 rounded-lg shadow-[0_0_25px_rgba(0,0,0,1)] border-2 border-slate-700">
       <div className="flex items-center gap-2 mb-1">
         {getWeaponIcon(currentWeapon)}
         <div>
           <div className="text-xs text-slate-400 uppercase">Weapon</div>
-          <div className={`font-bold ${getWeaponColor(currentWeapon)}`}>{weaponNames[currentWeapon]}</div>
+          <div className={`font-bold ${getWeaponColor(currentWeapon)}`}>
+            {weaponNames[currentWeapon]}{levelDisplay}
+          </div>
         </div>
       </div>
       <div className="mt-1 flex gap-1">

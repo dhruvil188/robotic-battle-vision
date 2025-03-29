@@ -17,8 +17,9 @@ export class Player implements PlayerType {
   animationFrame: number;
   currentWeapon: number; // 0 = standard, 1 = shotgun, 2 = laser, 3 = plasma
   private p: p5;
+  private weaponLevels: number[]; // Store the weapon levels
 
-  constructor(p: p5, x: number, y: number, w: number, h: number) {
+  constructor(p: p5, x: number, y: number, w: number, h: number, weaponLevels?: number[]) {
     this.p = p;
     this.x = x;
     this.y = y;
@@ -31,6 +32,7 @@ export class Player implements PlayerType {
     this.thrusterAnimation = 0;
     this.animationFrame = 0;
     this.currentWeapon = 0;
+    this.weaponLevels = weaponLevels || [0, 0, 0, 0]; // Default to level 0 for all weapons
   }
 
   moveLeft() {
@@ -44,10 +46,16 @@ export class Player implements PlayerType {
   }
 
   shoot() {
+    // Get current weapon level for damage calculations
+    const currentLevel = this.weaponLevels[this.currentWeapon];
+    // Calculate bonus damage based on weapon level (20% increase per level)
+    const levelMultiplier = 1 + (currentLevel * 0.2);
+
     if (this.currentWeapon === 0) {
       // Standard single bullet - simple but reliable
       const bullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -12, true);
-      bullet.damage = 10;
+      // Apply level-based damage
+      bullet.damage = Math.round(10 * levelMultiplier);
       
       // Return the bullet and particles for the game engine to handle
       const particles = [];
@@ -74,11 +82,11 @@ export class Player implements PlayerType {
       const rightBullet2 = new Bullet(this.p, this.x + 10, this.y - this.h / 2, 3.5, -7, true);
       
       // Set damage - each bullet does less damage individually, but combined they're powerful
-      centerBullet.damage = 7;
-      leftBullet1.damage = 6;
-      rightBullet1.damage = 6;
-      leftBullet2.damage = 5;
-      rightBullet2.damage = 5;
+      centerBullet.damage = Math.round(7 * levelMultiplier);
+      leftBullet1.damage = Math.round(6 * levelMultiplier);
+      rightBullet1.damage = Math.round(6 * levelMultiplier);
+      leftBullet2.damage = Math.round(5 * levelMultiplier);
+      rightBullet2.damage = Math.round(5 * levelMultiplier);
       
       // Create particles for shotgun blast
       const particles = [];
@@ -103,7 +111,7 @@ export class Player implements PlayerType {
     } else if (this.currentWeapon === 2) {
       // Laser - much more powerful, piercing beam with higher damage
       const bullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -25, true);
-      bullet.damage = 25; // Significant damage increase
+      bullet.damage = Math.round(25 * levelMultiplier); // Significant damage increase
       
       // Create laser beam particles - more intense
       const particles = [];
@@ -139,7 +147,7 @@ export class Player implements PlayerType {
     } else if (this.currentWeapon === 3) {
       // Plasma - Extremely powerful but slower, massive splash damage
       const bullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -6, true); // Slower but devastating
-      bullet.damage = 50; // Massive damage
+      bullet.damage = Math.round(50 * levelMultiplier); // Massive damage, scaled by level
       
       // Create plasma particles - more impressive and energetic
       const particles = [];

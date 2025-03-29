@@ -80,7 +80,7 @@ export class GameEngine {
           id: 'shotgun',
           name: 'Shotgun',
           description: 'Triple spread shot',
-          price: 1,
+          price: 5,
           type: 'weapon',
           purchased: false
         },
@@ -88,7 +88,7 @@ export class GameEngine {
           id: 'laser',
           name: 'Laser',
           description: 'Fast piercing beam',
-          price: 1,
+          price: 10,
           type: 'weapon',
           purchased: false
         },
@@ -96,7 +96,7 @@ export class GameEngine {
           id: 'plasma',
           name: 'Plasma Cannon',
           description: 'High damage, slow shot',
-          price: 1,
+          price: 15,
           type: 'weapon',
           purchased: false
         },
@@ -104,10 +104,11 @@ export class GameEngine {
           id: 'shield',
           name: 'Shield Boost',
           description: 'Temporary shield',
-          price: 1,
+          price: 3,
           type: 'upgrade'
         }
-      ]
+      ],
+      weaponLevels: [0, 0, 0, 0] // Standard, Shotgun, Laser, Plasma - all starting at level 0
     };
   }
   
@@ -131,7 +132,7 @@ export class GameEngine {
   
   setup() {
     // Create the player
-    this.state.player = new Player(this.p, this.p.width / 2, this.p.height - 100, 60, 40);
+    this.state.player = new Player(this.p, this.p.width / 2, this.p.height - 100, 60, 40, this.state.weaponLevels);
     
     // Create stars
     for (let i = 0; i < 150; i++) {
@@ -275,16 +276,68 @@ export class GameEngine {
   buyShopItem(itemIndex: number) {
     const item = this.state.shopItems[itemIndex];
     
-    // Check if player has enough gold
+    // Helper to get weapon index from ID
+    const getWeaponIndex = (id: string) => {
+      switch(id) {
+        case 'shotgun': return 1;
+        case 'laser': return 2;
+        case 'plasma': return 3;
+        default: return 0;
+      }
+    };
+    
+    // Handle weapon upgrades
+    if (item.type === 'weapon' && item.purchased) {
+      const weaponIndex = getWeaponIndex(item.id);
+      const currentLevel = this.state.weaponLevels[weaponIndex];
+      
+      // Max level check
+      if (currentLevel >= 5) {
+        toast.info(`${item.name} is already at maximum level!`, {
+          position: "bottom-center",
+          duration: 2000,
+        });
+        return;
+      }
+      
+      // Calculate upgrade price based on level
+      const upgradePrice = Math.ceil((currentLevel + 1) * (item.price * 0.8));
+      
+      // Check if player has enough gold
+      if (this.state.gold < upgradePrice) {
+        toast.error(`Not enough credits! You need ${upgradePrice} credits.`, {
+          position: "bottom-center",
+          duration: 2000,
+        });
+        return;
+      }
+      
+      // Apply the upgrade
+      this.state.weaponLevels[weaponIndex]++;
+      this.state.gold -= upgradePrice;
+      
+      // Show success message
+      toast.success(`${item.name} upgraded to Level ${this.state.weaponLevels[weaponIndex]}!`, {
+        position: "bottom-center",
+        duration: 2000,
+      });
+      
+      // Add visual effect
+      this.triggerFlashEffect(this.p.color(180, 180, 255), 60);
+      
+      return;
+    }
+    
+    // Check if player has enough gold for the initial purchase
     if (this.state.gold < item.price) {
-      toast.error(`Not enough gold! You need ${item.price} gold.`, {
+      toast.error(`Not enough credits! You need ${item.price} credits.`, {
         position: "bottom-center",
         duration: 2000,
       });
       return;
     }
     
-    // Process purchase based on item type
+    // Process purchase based on item type (original logic for initial purchases)
     if (item.type === 'health') {
       this.state.player.health = 100;
       this.state.gold -= item.price;
@@ -1306,7 +1359,8 @@ export class GameEngine {
   
   resetGame() {
     // Reset game state
-    this.state.player = new Player(this.p, this.p.width / 2, this.p.height - 100, 60, 40);
+    this.state.weaponLevels = [0, 0, 0, 0]; // Reset weapon levels
+    this.state.player = new Player(this.p, this.p.width / 2, this.p.height - 100, 60, 40, this.state.weaponLevels);
     this.state.enemies = [];
     this.state.bullets = [];
     this.state.enemyBullets = [];

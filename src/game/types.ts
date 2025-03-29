@@ -149,6 +149,7 @@ export interface ShopItem {
   type: 'weapon' | 'health' | 'upgrade';
   id: string;
   purchased?: boolean;
+  upgradePrice?: number;
 }
 
 export interface GameState {
@@ -184,4 +185,5 @@ export interface GameState {
   visualEffects: VisualEffects;
   shopOpen: boolean;
   shopItems: ShopItem[];
+  weaponLevels: number[]; // Array of levels for each weapon
 }

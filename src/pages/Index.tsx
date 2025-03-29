@@ -27,6 +27,7 @@ const Index = () => {
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [currentWeapon, setCurrentWeapon] = useState(0);
+  const [weaponLevels, setWeaponLevels] = useState([0, 0, 0, 0]); // Levels for all weapons
   
   // Weapon names array
   const weaponNames = ["Standard Gun", "Shotgun", "Laser", "Plasma Cannon"];
@@ -63,6 +64,7 @@ const Index = () => {
             setShopItems(gameEngine.state.shopItems);
             setGameStarted(gameEngine.state.gameStarted);
             setGameOver(gameEngine.state.gameOver);
+            setWeaponLevels(gameEngine.state.weaponLevels || [0, 0, 0, 0]);
             
             if (gameEngine.state.player) {
               setCurrentWeapon(gameEngine.state.player.currentWeapon);
@@ -148,7 +150,11 @@ const Index = () => {
               
               {/* Bottom row with weapon indicator */}
               <div className="self-start pointer-events-auto mb-4">
-                <WeaponIndicator currentWeapon={currentWeapon} weaponNames={weaponNames} />
+                <WeaponIndicator 
+                  currentWeapon={currentWeapon} 
+                  weaponNames={weaponNames} 
+                  weaponLevels={weaponLevels}
+                />
               </div>
             </div>
           </div>
@@ -161,6 +167,7 @@ const Index = () => {
             gold={gold} 
             onClose={handleToggleShop}
             onBuy={handleBuyItem}
+            weaponLevels={weaponLevels}
           />
         )}
         
