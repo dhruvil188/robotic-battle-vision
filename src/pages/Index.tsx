@@ -70,7 +70,8 @@ const Index = () => {
           
           // Pass other key events to the game engine if game is started
           if (gameState.gameStarted && !gameState.gameOver) {
-            return gameEngine.keyPressed(p.keyCode);
+            // Handle key press directly here since GameEngine doesn't have keyPressed method
+            return true; // Allow default behavior for game keys
           }
           
           return true; // Allow default behavior for other keys

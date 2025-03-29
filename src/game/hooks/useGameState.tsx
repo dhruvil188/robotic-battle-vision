@@ -1,7 +1,7 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { GameEngine } from '../GameEngine';
 import { showWeaponChangeToast, showWeaponUpgradeToast, showEnemyDefeatedToast } from '../utils/toastManager';
+import { toast } from "@/hooks/use-toast";
 
 export interface GameState {
   playerHealth: number;
@@ -133,12 +133,10 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
       }, 100);
       
       // Show a toast notification
-      import('../utils/toastManager').then(({ toast }) => {
-        toast({
-          title: "Game Started!",
-          description: "Use arrow keys to move and SPACE to shoot",
-          duration: 3000,
-        });
+      toast({
+        title: "Game Started!",
+        description: "Use arrow keys to move and SPACE to shoot",
+        duration: 3000,
       });
     }
   };
