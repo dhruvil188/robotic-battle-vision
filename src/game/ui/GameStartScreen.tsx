@@ -15,16 +15,15 @@ const GameStartScreen: React.FC<GameStartScreenProps> = ({ onStart }) => {
   const handleStart = React.useCallback(() => {
     if (hasStartedRef.current) return;
     hasStartedRef.current = true;
+    
+    // Call the onStart handler directly, no animation delay needed
     onStart();
     
-    // Reset the flag after a short delay
+    // Reset the flag after a short delay to prevent double-clicks
     setTimeout(() => {
       hasStartedRef.current = false;
-    }, 500);
+    }, 1000);
   }, [onStart]);
-
-  // We'll remove the keyboard handler here to avoid conflicts with the one in Index.tsx
-  // This will prevent double-triggering of the start game action
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50">

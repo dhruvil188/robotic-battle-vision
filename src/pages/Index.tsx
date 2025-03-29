@@ -15,6 +15,7 @@ const Index = () => {
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const p5ContainerRef = useRef<HTMLDivElement>(null);
   const gameEngineRef = useRef<GameEngine | null>(null);
+  const keyHandlerInitializedRef = useRef(false);
   
   // Use our custom hook for game state management
   const { 
@@ -62,9 +63,16 @@ const Index = () => {
 
         // Add keyPressed event handler to make controls more responsive
         p.keyPressed = () => {
-          // Check for Enter key to start game
-          if (p.keyCode === p.ENTER && !gameState.gameStarted) {
+          // Only handle ENTER key if not initialized yet
+          if (!keyHandlerInitializedRef.current && p.keyCode === p.ENTER && !gameState.gameStarted) {
             handleStartGame();
+            keyHandlerInitializedRef.current = true;
+            
+            // Reset after a delay
+            setTimeout(() => {
+              keyHandlerInitializedRef.current = false;
+            }, 1000);
+            
             return false; // Prevent default behavior
           }
           
@@ -81,8 +89,7 @@ const Index = () => {
       myP5 = new p5(sketch, p5ContainerRef.current);
     }
     
-    // Remove this event listener to prevent double-triggering game start
-    // This was likely causing the restart issue
+    // No additional event listeners needed here
     
     return () => {
       myP5?.remove();

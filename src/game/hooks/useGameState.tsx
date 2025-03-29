@@ -44,6 +44,8 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
   
   // Flag to prevent multiple start attempts
   const isStartingRef = useRef(false);
+  // Track if the game engine is being initialized
+  const isInitializingRef = useRef(false);
   
   // Weapon names array
   const weaponNames = ["Standard Gun", "Shotgun", "Laser", "Plasma Cannon"];
@@ -54,7 +56,11 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
     
     const engine = gameEngineRef.current;
     
+    // If we're in the process of starting the game, don't update state yet
+    if (isInitializingRef.current) return;
+    
     setGameState(prevState => {
+      // Make a copy of the previous state
       const newState = {
         ...prevState,
         playerHealth: engine.state.player?.health || 0,
@@ -122,22 +128,18 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
     // Prevent multiple start attempts
     if (isStartingRef.current) return;
     isStartingRef.current = true;
+    isInitializingRef.current = true;
+    
+    // Log that we're starting the game
+    console.log("Starting game...");
     
     if (gameEngineRef.current) {
-      // Ensure game is stopped first
-      if (gameEngineRef.current.state.gameOver) {
-        gameEngineRef.current.resetGame();
-      }
+      // Reset the game regardless of current state to ensure clean start
+      gameEngineRef.current.resetGame();
       
-      // Start the game
+      // Set game states explicitly
       gameEngineRef.current.state.gameStarted = true;
       gameEngineRef.current.state.gameOver = false;
-      
-      // Ensure player is properly initialized
-      if (!gameEngineRef.current.state.player) {
-        console.log("Initializing player");
-        gameEngineRef.current.resetGame();
-      }
       
       // Show a toast notification
       toast({
@@ -146,16 +148,36 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
         duration: 3000,
       });
       
-      // Reset the flag after a short delay
+      // Allow state updates after a short delay
       setTimeout(() => {
-        isStartingRef.current = false;
-      }, 500);
+        isInitializingRef.current = false;
+        console.log("Game started successfully");
+        
+        // Reset the start flag after a longer delay to prevent rapid restarts
+        setTimeout(() => {
+          isStartingRef.current = false;
+        }, 1000);
+      }, 100);
+    } else {
+      console.error("Game engine not initialized");
+      isStartingRef.current = false;
+      isInitializingRef.current = false;
     }
   };
   
   const handleRestartGame = () => {
+    // Prevent rapid restart if already starting
+    if (isStartingRef.current) return;
+    isStartingRef.current = true;
+    
     if (gameEngineRef.current) {
+      // Reset the game
       gameEngineRef.current.resetGame();
+      
+      // Reset the flag after a delay
+      setTimeout(() => {
+        isStartingRef.current = false;
+      }, 1000);
     }
   };
 
