@@ -142,12 +142,22 @@ export interface VisualEffects {
   };
 }
 
+export interface ShopItem {
+  name: string;
+  description: string;
+  price: number;
+  type: 'weapon' | 'health' | 'upgrade';
+  id: string;
+  purchased?: boolean;
+}
+
 export interface GameState {
   player: PlayerType;
   enemies: EnemyType[];
   bullets: BulletType[];
   enemyBullets: BulletType[];
   score: number;
+  gold: number;
   enemiesDestroyed: number;
   bossActive: boolean;
   lastBossSpawn: number;
@@ -172,4 +182,6 @@ export interface GameState {
   tripleShot: number;
   speedBoost: number;
   visualEffects: VisualEffects;
+  shopOpen: boolean;
+  shopItems: ShopItem[];
 }

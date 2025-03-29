@@ -15,7 +15,7 @@ export class Player implements PlayerType {
   shield: number;
   thrusterAnimation: number;
   animationFrame: number;
-  currentWeapon: number; // 0 = standard, 1 = shotgun
+  currentWeapon: number; // 0 = standard, 1 = shotgun, 2 = laser, 3 = plasma
   private p: p5;
 
   constructor(p: p5, x: number, y: number, w: number, h: number) {
@@ -47,6 +47,7 @@ export class Player implements PlayerType {
     if (this.currentWeapon === 0) {
       // Standard single bullet
       const bullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -12, true);
+      bullet.damage = 10;
       
       // Return the bullet and particles for the game engine to handle
       const particles = [];
@@ -64,11 +65,16 @@ export class Player implements PlayerType {
       }
       
       return { bullet, particles };
-    } else {
+    } else if (this.currentWeapon === 1) {
       // Shotgun - 3-way spread
       const centerBullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -10, true);
       const leftBullet = new Bullet(this.p, this.x - 5, this.y - this.h / 2, -2, -9, true);
       const rightBullet = new Bullet(this.p, this.x + 5, this.y - this.h / 2, 2, -9, true);
+      
+      // Set damage
+      centerBullet.damage = 8;
+      leftBullet.damage = 8;
+      rightBullet.damage = 8;
       
       // Create particles for shotgun blast
       const particles = [];
@@ -90,11 +96,62 @@ export class Player implements PlayerType {
         extraBullets: [leftBullet, rightBullet],
         particles 
       };
+    } else if (this.currentWeapon === 2) {
+      // Laser - fast piercing beam
+      const bullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -18, true);
+      bullet.damage = 15;
+      
+      // Create laser beam particles
+      const particles = [];
+      for (let i = 0; i < 10; i++) {
+        particles.push(new Particle(
+          this.p,
+          this.x + this.p.random(-2, 2), 
+          this.y - this.h / 2 - i * 5, 
+          this.p.random(-0.5, 0.5), 
+          this.p.random(-5, -2),
+          this.p.color(255, 0, 128, 200),
+          this.p.random(2, 5),
+          this.p.random(5, 15)
+        ));
+      }
+      
+      return { bullet, particles };
+    } else if (this.currentWeapon === 3) {
+      // Plasma - Large, powerful shot
+      const bullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -8, true);
+      bullet.damage = 30;
+      
+      // Create plasma particles
+      const particles = [];
+      for (let i = 0; i < 15; i++) {
+        particles.push(new Particle(
+          this.p,
+          this.x + this.p.random(-8, 8), 
+          this.y - this.h / 2, 
+          this.p.random(-2, 2), 
+          this.p.random(-3, -1),
+          this.p.color(0, 255, 200, 200),
+          this.p.random(6, 12),
+          this.p.random(12, 24)
+        ));
+      }
+      
+      return { bullet, particles };
     }
+    
+    // Default case
+    const bullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -12, true);
+    return { 
+      bullet, 
+      particles: [] 
+    };
   }
 
   switchWeapon() {
-    this.currentWeapon = (this.currentWeapon + 1) % 2;
+    // Only cycle through weapons that have been purchased
+    // This will be used by the shop system
+    this.currentWeapon = (this.currentWeapon + 1) % 4;
   }
 
   draw() {
@@ -162,7 +219,7 @@ export class Player implements PlayerType {
       // Standard weapon indicator (blue)
       this.p.fill(30, 144, 255);
       this.p.rect(this.x - 15, this.y + this.h/4, 30, 5, 2);
-    } else {
+    } else if (this.currentWeapon === 1) {
       // Shotgun indicator (orange)
       this.p.fill(255, 150, 50);
       this.p.rect(this.x - 15, this.y + this.h/4, 30, 5, 2);
@@ -170,6 +227,21 @@ export class Player implements PlayerType {
       // Extra bars for shotgun
       this.p.rect(this.x - 20, this.y + this.h/4 - 3, 5, 11, 1);
       this.p.rect(this.x + 15, this.y + this.h/4 - 3, 5, 11, 1);
+    } else if (this.currentWeapon === 2) {
+      // Laser indicator (pink)
+      this.p.fill(255, 0, 128);
+      this.p.rect(this.x - 15, this.y + this.h/4, 30, 5, 2);
+      
+      // Laser emitter tips
+      this.p.ellipse(this.x, this.y - this.h/3, 6, 6);
+    } else if (this.currentWeapon === 3) {
+      // Plasma indicator (cyan)
+      this.p.fill(0, 255, 200);
+      this.p.rect(this.x - 15, this.y + this.h/4, 30, 5, 2);
+      
+      // Plasma emitter
+      this.p.ellipse(this.x, this.y - this.h/3, 8, 8);
+      this.p.ellipse(this.x, this.y - this.h/3, 12, 12);
     }
     
     // Glowing elements

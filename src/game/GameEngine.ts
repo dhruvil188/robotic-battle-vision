@@ -1,6 +1,6 @@
 import p5 from "p5";
 import { toast } from "sonner";
-import { GameState, GameAssets, BulletType, VisualEffects } from "./types";
+import { GameState, GameAssets, BulletType, VisualEffects, ShopItem } from "./types";
 import { Player } from "./entities/Player";
 import { Enemy } from "./entities/Enemy";
 import { Bullet } from "./entities/Bullet";
@@ -26,6 +26,7 @@ export class GameEngine {
       bullets: [],
       enemyBullets: [],
       score: 0,
+      gold: 0,
       enemiesDestroyed: 0,
       bossActive: false,
       lastBossSpawn: 0,
@@ -65,7 +66,48 @@ export class GameEngine {
           centerX: 0,
           centerY: 0
         }
-      }
+      },
+      shopOpen: false,
+      shopItems: [
+        {
+          id: 'health_refill',
+          name: 'Health Refill',
+          description: 'Restore full health',
+          price: 1,
+          type: 'health'
+        },
+        {
+          id: 'shotgun',
+          name: 'Shotgun',
+          description: 'Triple spread shot',
+          price: 1,
+          type: 'weapon',
+          purchased: false
+        },
+        {
+          id: 'laser',
+          name: 'Laser',
+          description: 'Fast piercing beam',
+          price: 1,
+          type: 'weapon',
+          purchased: false
+        },
+        {
+          id: 'plasma',
+          name: 'Plasma Cannon',
+          description: 'High damage, slow shot',
+          price: 1,
+          type: 'weapon',
+          purchased: false
+        },
+        {
+          id: 'shield',
+          name: 'Shield Boost',
+          description: 'Temporary shield',
+          price: 1,
+          type: 'upgrade'
+        }
+      ]
     };
   }
   
@@ -109,6 +151,25 @@ export class GameEngine {
   }
   
   handleInput() {
+    // Toggle shop with 'S' key
+    if (this.p.keyIsPressed && (this.p.key === 's' || this.p.key === 'S')) {
+      this.p.keyIsPressed = false; // Reset to prevent multiple toggles
+      this.state.shopOpen = !this.state.shopOpen;
+      
+      if (this.state.shopOpen) {
+        toast.info("Shop opened. Press S to close.", {
+          position: "bottom-center",
+          duration: 2000,
+        });
+      }
+    }
+    
+    // If shop is open, handle shop interactions instead of regular gameplay
+    if (this.state.shopOpen) {
+      this.handleShopInput();
+      return;
+    }
+    
     // Player movement with speed boost consideration
     const moveSpeed = this.state.speedBoost > 0 ? this.state.player.speed * 1.5 : this.state.player.speed;
     
@@ -133,7 +194,13 @@ export class GameEngine {
       // Add flash effect for weapon switch
       this.triggerFlashEffect(this.p.color(180, 180, 255), 60);
       
-      toast.info(`Switched to ${this.state.player.currentWeapon === 0 ? "Standard Gun" : "Shotgun"}`, {
+      // Get current weapon name for toast
+      let weaponName = "Standard Gun";
+      if (this.state.player.currentWeapon === 1) weaponName = "Shotgun";
+      if (this.state.player.currentWeapon === 2) weaponName = "Laser";
+      if (this.state.player.currentWeapon === 3) weaponName = "Plasma Cannon";
+      
+      toast.info(`Switched to ${weaponName}`, {
         position: "bottom-center",
         duration: 1500,
       });
@@ -190,6 +257,83 @@ export class GameEngine {
         } catch (error) {
           console.log("Error playing sound:", error);
         }
+      }
+    }
+  }
+  
+  handleShopInput() {
+    // Handle number keys 1-5 to buy items
+    if (this.p.keyIsPressed) {
+      const keyNum = parseInt(this.p.key);
+      if (!isNaN(keyNum) && keyNum >= 1 && keyNum <= this.state.shopItems.length) {
+        this.p.keyIsPressed = false; // Reset to prevent multiple purchases
+        this.buyShopItem(keyNum - 1);
+      }
+    }
+  }
+  
+  buyShopItem(itemIndex: number) {
+    const item = this.state.shopItems[itemIndex];
+    
+    // Check if player has enough gold
+    if (this.state.gold < item.price) {
+      toast.error(`Not enough gold! You need ${item.price} gold.`, {
+        position: "bottom-center",
+        duration: 2000,
+      });
+      return;
+    }
+    
+    // Process purchase based on item type
+    if (item.type === 'health') {
+      this.state.player.health = 100;
+      this.state.gold -= item.price;
+      toast.success(`Health restored!`, {
+        position: "bottom-center",
+        duration: 1500,
+      });
+      
+      // Add visual effect
+      this.triggerFlashEffect(this.p.color(0, 255, 0), 60);
+    } 
+    else if (item.type === 'weapon') {
+      // Check if weapon is already purchased
+      if (item.purchased) {
+        toast.info(`You already own the ${item.name}!`, {
+          position: "bottom-center",
+          duration: 1500,
+        });
+        return;
+      }
+      
+      // Mark as purchased
+      item.purchased = true;
+      this.state.gold -= item.price;
+      
+      // Switch to newly purchased weapon
+      if (item.id === 'shotgun') this.state.player.currentWeapon = 1;
+      if (item.id === 'laser') this.state.player.currentWeapon = 2;
+      if (item.id === 'plasma') this.state.player.currentWeapon = 3;
+      
+      toast.success(`${item.name} purchased and equipped!`, {
+        position: "bottom-center",
+        duration: 2000,
+      });
+      
+      // Add visual effect
+      this.triggerFlashEffect(this.p.color(180, 180, 255), 60);
+    }
+    else if (item.type === 'upgrade') {
+      if (item.id === 'shield') {
+        this.state.player.shield = 300;
+        this.state.gold -= item.price;
+        toast.success(`Shield activated!`, {
+          position: "bottom-center",
+          duration: 1500,
+        });
+        
+        // Add visual effect
+        this.triggerFlashEffect(this.p.color(30, 144, 255), 60);
       }
     }
   }
@@ -437,7 +581,7 @@ export class GameEngine {
         
         if (d < this.state.enemies[j].r + 5) {
           // Apply bullet damage to enemy health
-          this.state.enemies[j].health -= this.state.bullets[i].damage;
+          this.state.enemies[j].health -= this.state.bullets[i].damage || 10;
           
           // Create small hit effect
           for (let k = 0; k < 5; k++) {
@@ -472,6 +616,9 @@ export class GameEngine {
             // Add screen shake based on enemy size or if it's a boss
             const shakeIntensity = this.state.enemies[j].isBoss ? 10 : Math.min(5, this.state.enemies[j].r * 0.3);
             this.triggerScreenShake(shakeIntensity);
+            
+            // Add gold for kill
+            this.state.gold += this.state.enemies[j].isBoss ? 5 : 1;
             
             // If it was a boss, create multiple explosions and distortion effect
             if (this.state.enemies[j].isBoss) {
@@ -520,7 +667,7 @@ export class GameEngine {
               }
               
               // Show boss defeated message
-              toast.success(`Boss Level ${this.state.bossesDefeated} defeated! +${baseScore + bossBonus} score`, {
+              toast.success(`Boss Level ${this.state.bossesDefeated} defeated! +${baseScore + bossBonus} score, +5 gold`, {
                 position: "top-center",
                 duration: 3000,
               });
@@ -823,7 +970,7 @@ export class GameEngine {
       this.p.textSize(16);
       this.p.text("Press ENTER to start", this.p.width / 2, this.p.height / 2 + 20);
       this.p.text("Arrow keys to move, SPACE to shoot", this.p.width / 2, this.p.height / 2 + 50);
-      this.p.text("W to change weapons", this.p.width / 2, this.p.height / 2 + 80);
+      this.p.text("W to change weapons, S to open shop", this.p.width / 2, this.p.height / 2 + 80);
       
       // Check for ENTER key to start game
       if (this.p.keyIsDown(13)) {
@@ -875,6 +1022,14 @@ export class GameEngine {
       star.draw();
     }
     
+    // If shop is open, draw shop instead of handling game logic
+    if (this.state.shopOpen) {
+      this.drawShop();
+      // Still handle input for shop interactions
+      this.handleInput();
+      return;
+    }
+    
     // Handle input
     this.handleInput();
     
@@ -909,6 +1064,70 @@ export class GameEngine {
     
     // Gradually reduce visual effects
     this.updateVisualEffects();
+  }
+  
+  drawShop() {
+    // Draw semi-transparent overlay
+    this.p.fill(0, 0, 0, 180);
+    this.p.rect(0, 0, this.p.width, this.p.height);
+    
+    // Draw shop title
+    this.p.fill(255);
+    this.p.textSize(30);
+    this.p.textAlign(this.p.CENTER);
+    this.p.text("SHOP", this.p.width / 2, 70);
+    
+    // Draw gold
+    this.p.fill(255, 215, 0); // Gold color
+    this.p.textSize(20);
+    this.p.text(`Gold: ${this.state.gold}`, this.p.width / 2, 110);
+    
+    // Draw shop items
+    const itemHeight = 80;
+    const startY = 150;
+    
+    this.p.textAlign(this.p.LEFT);
+    for (let i = 0; i < this.state.shopItems.length; i++) {
+      const item = this.state.shopItems[i];
+      const y = startY + i * itemHeight;
+      
+      // Draw background for item slot
+      this.p.fill(30, 30, 40, 200);
+      this.p.rect(this.p.width / 2 - 200, y, 400, itemHeight - 10, 5);
+      
+      // Draw item info
+      this.p.fill(255);
+      this.p.textSize(18);
+      this.p.text(`${i + 1}. ${item.name}`, this.p.width / 2 - 180, y + 25);
+      
+      // Draw description
+      this.p.fill(200);
+      this.p.textSize(14);
+      this.p.text(item.description, this.p.width / 2 - 180, y + 50);
+      
+      // Draw price with gold icon
+      this.p.fill(255, 215, 0); // Gold color
+      this.p.textAlign(this.p.RIGHT);
+      this.p.text(`${item.price} Gold`, this.p.width / 2 + 180, y + 25);
+      
+      // Draw status (purchased or available)
+      if (item.type === 'weapon' && item.purchased) {
+        this.p.fill(0, 255, 0);
+        this.p.text("Purchased", this.p.width / 2 + 180, y + 50);
+      } else {
+        this.p.fill(30, 144, 255);
+        this.p.text("Available", this.p.width / 2 + 180, y + 50);
+      }
+      
+      // Reset text align
+      this.p.textAlign(this.p.LEFT);
+    }
+    
+    // Draw instruction
+    this.p.fill(200);
+    this.p.textAlign(this.p.CENTER);
+    this.p.textSize(16);
+    this.p.text("Press 1-5 to purchase items, S to close shop", this.p.width / 2, this.p.height - 50);
   }
   
   drawEntities() {
@@ -974,72 +1193,21 @@ export class GameEngine {
     this.p.textAlign(this.p.CENTER);
     this.p.text(`Health: ${this.state.player.health}`, 120, 35);
     
+    // Gold display
+    this.p.fill(255, 215, 0); // Gold color
+    this.p.textAlign(this.p.LEFT);
+    this.p.textSize(18);
+    this.p.text(`Gold: ${this.state.gold}`, 20, 60);
+    
     // Score
+    this.p.fill(255);
     this.p.textAlign(this.p.RIGHT);
     this.p.textSize(20);
     this.p.text(`Score: ${this.state.score}`, this.p.width - 20, 30);
     
-    // Active power-ups indicators
-    let powerUpY = 60;
-    this.p.textAlign(this.p.LEFT);
+    // Shop hint
     this.p.textSize(14);
-    
-    if (this.state.tripleShot > 0) {
-      this.p.fill(180, 90, 255);
-      this.p.text(`Triple Shot: ${Math.ceil(this.state.tripleShot / 60)}s`, 20, powerUpY);
-      powerUpY += 25;
-    }
-    
-    if (this.state.speedBoost > 0) {
-      this.p.fill(0, 220, 220);
-      this.p.text(`Speed Boost: ${Math.ceil(this.state.speedBoost / 60)}s`, 20, powerUpY);
-      powerUpY += 25;
-    }
-    
-    if (this.state.player.shield > 0) {
-      this.p.fill(30, 144, 255);
-      this.p.text(`Shield: ${Math.ceil(this.state.player.shield / 60)}s`, 20, powerUpY);
-    }
-    
-    // Weapon indicator
-    this.p.textAlign(this.p.RIGHT);
-    const weaponName = this.state.player.currentWeapon === 0 ? "Standard Gun" : "Shotgun";
-    this.p.fill(255);
-    this.p.text(`Weapon: ${weaponName}`, this.p.width - 20, 60);
-    
-    // Display boss health bar if boss is active
-    let bossFound = false;
-    for (let enemy of this.state.enemies) {
-      if (enemy.isBoss) {
-        bossFound = true;
-        // Boss health bar at top center
-        const bossHealthWidth = 300;
-        const bossHealthHeight = 15;
-        this.p.fill(50);
-        this.p.rect(this.p.width / 2 - bossHealthWidth / 2, 10, bossHealthWidth, bossHealthHeight, 3);
-        
-        this.p.fill(255, 50, 50);
-        const bossHealthPercent = enemy.health / enemy.maxHealth;
-        this.p.rect(this.p.width / 2 - bossHealthWidth / 2, 10, bossHealthWidth * bossHealthPercent, bossHealthHeight, 3);
-        
-        this.p.fill(255);
-        this.p.textAlign(this.p.CENTER);
-        this.p.textSize(12);
-        this.p.text(`BOSS LVL ${this.state.bossesDefeated + 1}`, this.p.width / 2, 35);
-        break;
-      }
-    }
-    
-    // Update boss active state based on whether a boss was found
-    this.state.bossActive = bossFound;
-    
-    // Display hit flash effect
-    if (this.state.hitFlash > 0) {
-      this.p.noStroke();
-      this.p.fill(255, 0, 0, this.state.hitFlash * 6);
-      this.p.rect(0, 0, this.p.width, this.p.height);
-      this.state.hitFlash--;
-    }
+    this.p.text("Press S for Shop", this.p.width - 20, 60);
   }
   
   applyVisualEffects() {
@@ -1143,6 +1311,7 @@ export class GameEngine {
     this.state.bullets = [];
     this.state.enemyBullets = [];
     this.state.score = 0;
+    this.state.gold = 0;
     this.state.enemiesDestroyed = 0;
     this.state.bossActive = false;
     this.state.lastBossSpawn = 0;
@@ -1163,6 +1332,15 @@ export class GameEngine {
     this.state.powerUpSpawnInterval = 10000;
     this.state.tripleShot = 0;
     this.state.speedBoost = 0;
+    this.state.shopOpen = false;
+    
+    // Reset purchased status for weapons
+    for (let item of this.state.shopItems) {
+      if (item.type === 'weapon') {
+        item.purchased = false;
+      }
+    }
+    
     this.state.visualEffects = {
       screenShake: 0,
       screenShakeIntensity: 0,
