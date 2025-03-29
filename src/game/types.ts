@@ -12,9 +12,11 @@ export interface PlayerType {
   shield: number;
   thrusterAnimation: number;
   animationFrame: number;
+  currentWeapon: number;
   moveLeft: () => void;
   moveRight: () => void;
-  shoot: () => { bullet: BulletType; particles: ParticleType[] };
+  shoot: () => { bullet: BulletType; extraBullets?: BulletType[]; particles: ParticleType[] };
+  switchWeapon: () => void;
   draw: () => void;
 }
 

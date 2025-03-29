@@ -53,7 +53,7 @@ export class GameEngine {
     try {
       // Initialize sounds if p5.sound is available
       if (this.p.SoundFile) {
-        this.assets.shootSound = new this.p.SoundFile("data:audio/wav;base64,UklGRpQEAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YXAEAABt7XDtgO2X7bLtzO3o7QHuGe4v7kXuWu5v7oLule6m7rjuyO7X7ufu9e4C7w7vGe8k7y3vNe877z/vQu9E70XvRO9C70HvPO857zPvLO8l7xzvE+8I7//u9O7p7tzu0e7E7rjuq+6d7o/ufu5w7mDuT+4+7izuGu4I7vXt4u3O7brtpu2R7X3taO1T7T7tKe0U7f/s6uzV7MHsrOyX7ILsb+xb7EfsM+wg7A7s/OvL6+3rAewV7CnsP+xV7GvsgeyX7K7sxezc7PPsCu0h7TjtT+1m7X3tle2r7cLt2O3v7Qbu3e0W7k7uh+7B7vru8+4s72XvnO/T7wLwA/AK8ynzXfOX88bztuLwEfE38VzxgfGm8cnx6/EL8irySPJm8oPyoPK78tbyzPG98djx8vEN8ib+NfNA80zzWPNi823zePOC844zmfOj86zzs/O5877zwvPG88jzyvPK88rzyfPI88bzw/PCYMsnyXzJy8kXynDKu8oEy0zLksvZyxrMV8yCzKbMxczdzO3M980HzQ/NFc0Z5M/NJc8zz0DPTc9Zz2TPbs93z3/Phc+Kz47Pkc+Sz5LPkc+Pz4zPiM+Ez3/Pes91z2/PaM9hz1nPUM9Gz0DPXeDHH8k9yVrJdMmOyabJvcnTyenJ/skSyiXKNspGylLKXcpoyoZ3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKPY/Njv2OLo9ej42PvI/qjxmQSJB3kKaQ1JD9KNeQN+BZ4HngmOC24NXg9+Kh4VLhM+EV4fngy+hn4kvCZMp4yozKoMqzysbK2crryv3KD8sgyzLKPMq6ysvK28ogy4nLmcupy7jLx8vWy+TL8sv/yyvJYsyNzLnM5Mpb79/vLvIw8vnyXPNA8+DzfPQZ9bb1VPbI9kH3u/c0+K74Jvmf+Rj6kfp0+3377/yp/WL+Hf/Y/2kAHAG0AYkCSgMNBNMEngVlBi4H9wfCCIwJVwoiC+4LugyGDVQOIg/xD7/QQfD/8Ijy/PJn87nzB/RT9J/06/Q19YD1y/UV9l72p/bw9jn3gffJ9xL4WviT+dX5DPpJ+oH6uvry+ir7YvuZ+9H7CPw//HX8q/zi/Bn9T/2F/bn95/0b/k/+g/63/uv+H/9S/4X/uP/r/x0AUACCALQAGQBbAAEBMgFjAZMBwgHxASACTwJ9AqsCKAKFAusCEAM0A1cDeQOaA7oDVwKXArUCGQMUBFAEpwT9BE8FoQXyBUMGlAbkBjQHgwfTBxcIYAiqCPIIOwmCCcgJDgpTCpcK2wo=");
+        this.assets.shootSound = new this.p.SoundFile("data:audio/wav;base64,UklGRpQEAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YXAEAABt7XDtgO2X7bLtzO3o7QHuGe4v7kXuWu5v7oLule6m7rjuyO7X7ufu9e4C7w7vGe8k7y3vNe877z/vQu9E70XvRO9C70HvPO857zPvLO8l7xzvE+8I7//u9O7p7tzu0e7E7rjuq+6d7o/ufu5w7mDuT+4+7izuGu4I7vXt4u3O7brtpu2R7X3taO1T7T7tKe0U7f/s6uzV7MHsrOyX7ILsb+xb7EfsM+wg7A7s/OvL6+3rAewV7CnsP+xV7GvsgeyX7K7sxezc7PPsCu0h7TjtT+1m7X3tle2r7cLt2O3v7Qbu3e0W7k7uh+7B7vru8+4s72XvnO/T7wLwA/AK8ynzXfOX88bztuLwEfE38VzxgfGm8cnx6/EL8irySPJm8oPyoPK78tbyzPG98djx8vEN8ib+NfNA80zzWPNi823zePOC844zmfOj86zzs/O5877zwvPG88jzyvPK88rzyfPI88bzw/PCYMsnyXzJy8kXynDKu8oEy0zLksvZyxrMV8yCzKbMxczdzO3M980HzQ/NFc0Z5M/NJc8zz0DPTc9Zz2TPbs93z3/Phc+Kz47Pkc+Sz5LPkc+Pz4zPiM+Ez3/Pes91z2/PaM9hz1nPUM9Gz0DPXeDHH8k9yVrJdMmOyabJvcnTyenJ/skSyiXKNspGylLKXcpoyoZ3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKPY/Njv2OLo9ej42PvI/qjxmQSJB3kKaQ1JD9KNeQN+BZ4HngmOC24NXg9+Kh4VLhM+EV4fngy+hn4kvCZMp4yozKoMqzysbK2crryv3KD8sgyzLKPMq6ysvK28ogy4nLmcupy7jLx8vWy+TL8sv/yyvJYsyNzLnM5Mpb79/vLvIw8vnyXPNA8+DzfPQZ9bb1VPbI9kH3u/c0+K74Jvmf+Rj6kfp0+3377/yp/WL+Hf/Y/2kAHAG0AYkCSgMNBNMEngVlBi4H9wfCCIwJVwoiC+4LugyGDVQOIg/xD7/QQfD/8Ijy/PJn87nzB/RT9J/06/Q19YD1y/UV9l72p/bw9jn3gffJ9xL4WviT+dX5DPpJ+oH6uvry+ir7YvuZ+9H7CPw//HX8q/zi/Bn9T/2F/bn95/0b/k/+g/63/uv+H/9S/4X/uP/r/x0AUACCALQAGQBbAAEBMgFjAZMBwgHxASACTwJ9AqsCKAKFAusCEAM0A1cDeQOaA7oDVwKXArUCGQMUBFAEpwT9BE8FoQXyBUMGlAbkBjQHgwfTBxcIYAiqCPIIOwmCCcgJDgpTCpcK2wo=");
         
         if (this.assets.shootSound) {
           this.assets.shootSound.setVolume(0.2);
@@ -102,6 +102,16 @@ export class GameEngine {
       }
     }
 
+    // Weapon switching with W key
+    if (this.p.keyIsPressed && this.p.key === 'w' || this.p.key === 'W') {
+      this.p.keyIsPressed = false; // Reset to prevent multiple switches
+      this.state.player.switchWeapon();
+      toast.info(`Switched to ${this.state.player.currentWeapon === 0 ? "Standard Gun" : "Shotgun"}`, {
+        position: "bottom-center",
+        duration: 1500,
+      });
+    }
+
     // Player shooting with cooldown
     if (this.p.keyIsDown(32) && this.p.millis() - this.state.lastShotTime > this.state.shootDelay) { // 32 is spacebar
       // Handle different shot types
@@ -111,7 +121,7 @@ export class GameEngine {
         this.state.bullets.push(mainShot.bullet);
         this.state.backgroundParticles.push(...mainShot.particles);
         
-        // Create side bullets
+        // Create side bullets for triple shot
         const leftBullet = new Bullet(
           this.p, 
           this.state.player.x - 15, 
@@ -132,9 +142,15 @@ export class GameEngine {
         
         this.state.bullets.push(leftBullet, rightBullet);
       } else {
-        // Normal shot
+        // Normal shot based on weapon type
         const result = this.state.player.shoot();
         this.state.bullets.push(result.bullet);
+        
+        // Add extra bullets if present (for shotgun)
+        if (result.extraBullets && result.extraBullets.length > 0) {
+          this.state.bullets.push(...result.extraBullets);
+        }
+        
         this.state.backgroundParticles.push(...result.particles);
       }
       
@@ -153,13 +169,33 @@ export class GameEngine {
   
   spawnEnemies() {
     if (this.p.millis() - this.state.lastEnemySpawnTime > this.state.enemySpawnInterval) {
-      const enemy = new Enemy(this.p, this.p.random(this.p.width), -30, 20, this.p.random(1.5, 3));
-      this.state.enemies.push(enemy);
+      // Determine how many enemies to spawn (1-3 based on score)
+      const spawnCount = Math.min(3, Math.floor(this.state.score / 10) + 1);
+      
+      for (let i = 0; i < spawnCount; i++) {
+        // Add some variation to positions for multiple spawns
+        const offsetX = i === 0 ? 0 : this.p.random(-100, 100);
+        const spawnX = this.p.constrain(
+          this.p.random(this.p.width) + offsetX, 
+          50, 
+          this.p.width - 50
+        );
+        
+        const enemy = new Enemy(
+          this.p, 
+          spawnX, 
+          -30 - (i * 30), // Stagger vertical positions
+          20, 
+          this.p.random(2, 3.5) // Faster enemies
+        );
+        this.state.enemies.push(enemy);
+      }
+      
       this.state.lastEnemySpawnTime = this.p.millis();
       
-      // Gradually increase difficulty
-      if (this.state.enemySpawnInterval > 800) {
-        this.state.enemySpawnInterval *= 0.995; // Slowly decrease spawn interval
+      // Gradually increase difficulty - faster spawn rate
+      if (this.state.enemySpawnInterval > 600) { // Lower minimum interval for more enemies
+        this.state.enemySpawnInterval *= 0.992; // Decrease interval faster
       }
     }
   }
@@ -640,6 +676,11 @@ export class GameEngine {
       this.p.rect(100, 65, shieldWidth, 8, 4);
     }
     
+    // Weapon indicator
+    this.p.fill(255);
+    this.p.textSize(14);
+    this.p.text(`WEAPON: ${this.state.player.currentWeapon === 0 ? "STANDARD" : "SHOTGUN"}`, 100, 78);
+    
     // Active power-ups indicators
     let powerUpY = 80;
     
@@ -705,7 +746,8 @@ export class GameEngine {
     this.p.fill(180, 200, 220);
     this.p.textSize(18);
     this.p.text("Use ARROW KEYS to move and SPACE to shoot", this.p.width / 2, this.p.height / 2 + 40);
-    this.p.text("Destroy enemy ships and collect power-ups to survive", this.p.width / 2, this.p.height / 2 + 70);
+    this.p.text("Press W to switch weapons", this.p.width / 2, this.p.height / 2 + 70);
+    this.p.text("Destroy enemy ships and collect power-ups to survive", this.p.width / 2, this.p.height / 2 + 100);
     
     // Start prompt with pulsing effect
     let promptAlpha = 150 + Math.sin(this.p.frameCount * 0.1) * 105;
@@ -806,7 +848,7 @@ export class GameEngine {
           this.state.bullets.push(mainShot.bullet);
           this.state.backgroundParticles.push(...mainShot.particles);
           
-          // Create side bullets
+          // Create side bullets for triple shot
           const leftBullet = new Bullet(
             this.p, 
             this.state.player.x - 15, 
@@ -827,9 +869,15 @@ export class GameEngine {
           
           this.state.bullets.push(leftBullet, rightBullet);
         } else {
-          // Normal shot
+          // Normal shot based on weapon type
           const result = this.state.player.shoot();
           this.state.bullets.push(result.bullet);
+          
+          // Add extra bullets if present (for shotgun)
+          if (result.extraBullets && result.extraBullets.length > 0) {
+            this.state.bullets.push(...result.extraBullets);
+          }
+          
           this.state.backgroundParticles.push(...result.particles);
         }
         

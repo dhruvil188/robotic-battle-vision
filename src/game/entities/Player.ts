@@ -15,6 +15,7 @@ export class Player implements PlayerType {
   shield: number;
   thrusterAnimation: number;
   animationFrame: number;
+  currentWeapon: number; // 0 = standard, 1 = shotgun
   private p: p5;
 
   constructor(p: p5, x: number, y: number, w: number, h: number) {
@@ -29,6 +30,7 @@ export class Player implements PlayerType {
     this.shield = 0;
     this.thrusterAnimation = 0;
     this.animationFrame = 0;
+    this.currentWeapon = 0;
   }
 
   moveLeft() {
@@ -42,24 +44,57 @@ export class Player implements PlayerType {
   }
 
   shoot() {
-    const bullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -12, true);
-    
-    // Return the bullet and particles for the game engine to handle
-    const particles = [];
-    for (let i = 0; i < 5; i++) {
-      particles.push(new Particle(
-        this.p,
-        this.x, 
-        this.y - this.h / 2, 
-        this.p.random(-1, 1), 
-        this.p.random(-3, -1),
-        this.p.color(30, 144, 255, 200),
-        this.p.random(5, 10),
-        this.p.random(10, 20)
-      ));
+    if (this.currentWeapon === 0) {
+      // Standard single bullet
+      const bullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -12, true);
+      
+      // Return the bullet and particles for the game engine to handle
+      const particles = [];
+      for (let i = 0; i < 5; i++) {
+        particles.push(new Particle(
+          this.p,
+          this.x, 
+          this.y - this.h / 2, 
+          this.p.random(-1, 1), 
+          this.p.random(-3, -1),
+          this.p.color(30, 144, 255, 200),
+          this.p.random(5, 10),
+          this.p.random(10, 20)
+        ));
+      }
+      
+      return { bullet, particles };
+    } else {
+      // Shotgun - 3-way spread
+      const centerBullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -10, true);
+      const leftBullet = new Bullet(this.p, this.x - 5, this.y - this.h / 2, -2, -9, true);
+      const rightBullet = new Bullet(this.p, this.x + 5, this.y - this.h / 2, 2, -9, true);
+      
+      // Create particles for shotgun blast
+      const particles = [];
+      for (let i = 0; i < 12; i++) {
+        particles.push(new Particle(
+          this.p,
+          this.x + this.p.random(-10, 10), 
+          this.y - this.h / 2, 
+          this.p.random(-2, 2), 
+          this.p.random(-4, -1),
+          this.p.color(255, 200, 100, 200),
+          this.p.random(4, 8),
+          this.p.random(8, 15)
+        ));
+      }
+      
+      return { 
+        bullet: centerBullet, 
+        extraBullets: [leftBullet, rightBullet],
+        particles 
+      };
     }
-    
-    return { bullet, particles };
+  }
+
+  switchWeapon() {
+    this.currentWeapon = (this.currentWeapon + 1) % 2;
   }
 
   draw() {
@@ -121,6 +156,21 @@ export class Player implements PlayerType {
     this.p.fill(80, 80, 90);
     this.p.rect(this.x - this.w/2 - 5, this.y - this.h/6, 10, 20, 3);
     this.p.rect(this.x + this.w/2 - 5, this.y - this.h/6, 10, 20, 3);
+    
+    // Current weapon indicator
+    if (this.currentWeapon === 0) {
+      // Standard weapon indicator (blue)
+      this.p.fill(30, 144, 255);
+      this.p.rect(this.x - 15, this.y + this.h/4, 30, 5, 2);
+    } else {
+      // Shotgun indicator (orange)
+      this.p.fill(255, 150, 50);
+      this.p.rect(this.x - 15, this.y + this.h/4, 30, 5, 2);
+      
+      // Extra bars for shotgun
+      this.p.rect(this.x - 20, this.y + this.h/4 - 3, 5, 11, 1);
+      this.p.rect(this.x + 15, this.y + this.h/4 - 3, 5, 11, 1);
+    }
     
     // Glowing elements
     let glowPulse = (Math.sin(this.p.frameCount * 0.1) + 1) * 50 + 150;
