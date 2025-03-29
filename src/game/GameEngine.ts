@@ -30,6 +30,8 @@ export class GameEngine {
       bossActive: false,
       lastBossSpawn: 0,
       bossSpawnThreshold: 50, // Boss appears after 50 enemies destroyed
+      bossesDefeated: 0,      // Track how many bosses have been defeated
+      bossKillCounter: 0,     // Counter for kills after first boss is defeated
       lastShotTime: 0,
       shootDelay: 300,
       lastEnemySpawnTime: 0,
@@ -172,22 +174,30 @@ export class GameEngine {
   }
   
   spawnEnemies() {
-    // Don't spawn regular enemies if boss is active
-    if (this.state.bossActive) return;
-    
     // Check if it's time to spawn a boss
-    if (this.state.enemiesDestroyed >= this.state.bossSpawnThreshold && 
-        !this.state.bossActive && 
-        this.p.millis() - this.state.lastBossSpawn > 30000) { // At least 30 seconds between bosses
+    // After the first boss is defeated, a new boss will appear after every 15 more enemy kills
+    const shouldSpawnBoss = this.state.bossesDefeated === 0 
+      ? this.state.enemiesDestroyed >= this.state.bossSpawnThreshold
+      : this.state.bossKillCounter >= 15;
       
+    if (shouldSpawnBoss && !this.state.bossActive && this.p.millis() - this.state.lastBossSpawn > 15000) {
       this.spawnBoss();
+      
+      // Reset the boss kill counter after spawning a new boss
+      if (this.state.bossesDefeated > 0) {
+        this.state.bossKillCounter = 0;
+      }
+      
       return;
     }
     
     // Regular enemy spawning logic
     if (this.p.millis() - this.state.lastEnemySpawnTime > this.state.enemySpawnInterval) {
       // Determine how many enemies to spawn (1-3 based on score)
-      const spawnCount = Math.min(3, Math.floor(this.state.score / 10) + 1);
+      // Make this scale with the number of bosses defeated to increase difficulty
+      const baseSpawnCount = Math.min(3, Math.floor(this.state.score / 10) + 1);
+      const additionalEnemies = Math.min(3, Math.floor(this.state.bossesDefeated / 2));
+      const spawnCount = baseSpawnCount + additionalEnemies;
       
       for (let i = 0; i < spawnCount; i++) {
         // Add some variation to positions for multiple spawns
@@ -199,15 +209,17 @@ export class GameEngine {
         );
         
         // Randomly choose enemy type, with higher chance of stronger enemies as score increases
+        // And as more bosses are defeated
         let enemyType = 0;
         const typeRoll = this.p.random();
+        const difficultyBoost = this.state.bossesDefeated * 0.05; // Each boss defeated increases chance of tougher enemies
         
-        if (this.state.score > 50) {
-          if (typeRoll < 0.3) enemyType = 0; // Basic
-          else if (typeRoll < 0.5) enemyType = 1; // Tanky
-          else if (typeRoll < 0.7) enemyType = 2; // Fast
-          else if (typeRoll < 0.9) enemyType = 3; // Rapid fire
-          else enemyType = 4; // Heavy gunner
+        if (this.state.score > 50 || this.state.bossesDefeated > 0) {
+          if (typeRoll < Math.max(0.1, 0.3 - difficultyBoost)) enemyType = 0; // Basic - less common as game progresses
+          else if (typeRoll < Math.max(0.2, 0.5 - difficultyBoost)) enemyType = 1; // Tanky
+          else if (typeRoll < Math.max(0.3, 0.7 - difficultyBoost)) enemyType = 2; // Fast
+          else if (typeRoll < Math.max(0.6, 0.9 - difficultyBoost)) enemyType = 3; // Rapid fire
+          else enemyType = 4; // Heavy gunner - more common as game progresses
         } else if (this.state.score > 25) {
           if (typeRoll < 0.4) enemyType = 0; // Basic
           else if (typeRoll < 0.6) enemyType = 1; // Tanky
@@ -222,12 +234,16 @@ export class GameEngine {
           else enemyType = 1; // Tanky
         }
         
+        // Increase enemy speed based on bosses defeated
+        const speedBoost = 1 + (this.state.bossesDefeated * 0.1);
+        const baseSpeed = this.p.random(2, 3.5);
+        
         const enemy = new Enemy(
           this.p, 
           spawnX, 
           -30 - (i * 30), // Stagger vertical positions
           20, 
-          this.p.random(2, 3.5), // Speed
+          baseSpeed * speedBoost, // Speed increases with each boss defeated
           enemyType
         );
         this.state.enemies.push(enemy);
@@ -236,8 +252,10 @@ export class GameEngine {
       this.state.lastEnemySpawnTime = this.p.millis();
       
       // Gradually increase difficulty - faster spawn rate
+      // Make spawn rate decrease more rapidly after each boss is defeated
+      const difficultyMultiplier = 0.992 - (this.state.bossesDefeated * 0.001);
       if (this.state.enemySpawnInterval > 600) {
-        this.state.enemySpawnInterval *= 0.992;
+        this.state.enemySpawnInterval *= difficultyMultiplier;
       }
     }
   }
@@ -247,6 +265,10 @@ export class GameEngine {
     const bossX = this.p.width / 2;
     const bossY = -50;
     
+    // Make bosses tougher as more are defeated
+    const healthMultiplier = 1 + (this.state.bossesDefeated * 0.3);
+    const damageMultiplier = 1 + (this.state.bossesDefeated * 0.2);
+    
     const boss = new Enemy(
       this.p,
       bossX,
@@ -254,15 +276,18 @@ export class GameEngine {
       30, // Larger radius
       1.5, // Speed
       undefined, // Random type
-      true // Is boss
+      true, // Is boss
+      healthMultiplier, // Health multiplier for tougher bosses
+      damageMultiplier // Damage multiplier for stronger attacks
     );
     
     this.state.enemies.push(boss);
     this.state.bossActive = true;
     this.state.lastBossSpawn = this.p.millis();
     
-    // Show boss warning
-    toast.error("WARNING: Boss approaching!", {
+    // Show boss warning with increasing threat level
+    const bossLevel = this.state.bossesDefeated + 1;
+    toast.error(`WARNING: Level ${bossLevel} Boss approaching!`, {
       position: "top-center",
       duration: 3000,
     });
@@ -445,12 +470,17 @@ export class GameEngine {
               
               // Update boss state
               this.state.bossActive = false;
+              this.state.bossesDefeated++; // Increment the number of bosses defeated
               
               // Increase score significantly for boss kill
-              this.state.score += 25;
+              const baseScore = 25;
+              const bossBonus = this.state.bossesDefeated * 5; // Each boss gives more points
+              this.state.score += baseScore + bossBonus;
               
               // Spawn power-ups from boss
-              for (let k = 0; k < 3; k++) {
+              // More power-ups from higher-level bosses
+              const powerUpCount = 3 + Math.min(3, Math.floor(this.state.bossesDefeated / 2));
+              for (let k = 0; k < powerUpCount; k++) {
                 const powerUp = new PowerUp(
                   this.p, 
                   this.state.enemies[j].x + this.p.random(-30, 30), 
@@ -460,7 +490,7 @@ export class GameEngine {
               }
               
               // Show boss defeated message
-              toast.success("Boss defeated! +25 score", {
+              toast.success(`Boss Level ${this.state.bossesDefeated} defeated! +${baseScore + bossBonus} score`, {
                 position: "top-center",
                 duration: 3000,
               });
@@ -470,6 +500,11 @@ export class GameEngine {
             } else {
               // Regular enemy destroyed
               this.state.score++; // Increase score
+              
+              // After first boss is defeated, count kills toward next boss spawn
+              if (this.state.bossesDefeated > 0) {
+                this.state.bossKillCounter++;
+              }
             }
             
             // Increment enemies destroyed counter
@@ -806,10 +841,19 @@ export class GameEngine {
     this.p.textSize(28);
     this.p.text(this.state.score, 20, 40);
     
-    // Show enemies destroyed counter
+    // Show enemies destroyed counter and boss information
     this.p.textSize(12);
     this.p.fill(200, 200, 255);
-    this.p.text(`Enemies: ${this.state.enemiesDestroyed}/${this.state.bossSpawnThreshold}`, 20, 70);
+    
+    if (this.state.bossesDefeated === 0) {
+      // First boss spawn threshold
+      this.p.text(`Enemies: ${this.state.enemiesDestroyed}/${this.state.bossSpawnThreshold}`, 20, 70);
+    } else {
+      // After first boss, show kills until next boss
+      this.p.text(`Enemies: ${this.state.bossKillCounter}/15 to Boss`, 20, 70);
+      this.p.fill(255, 100, 100);
+      this.p.text(`Bosses Defeated: ${this.state.bossesDefeated}`, 20, 85);
+    }
     
     // Health bar
     this.p.textSize(16);
@@ -993,6 +1037,8 @@ export class GameEngine {
     this.state.bossActive = false;
     this.state.lastBossSpawn = 0;
     this.state.bossSpawnThreshold = 50;
+    this.state.bossesDefeated = 0;
+    this.state.bossKillCounter = 0;
     this.state.lastShotTime = 0;
     this.state.lastEnemySpawnTime = 0;
     this.state.powerUpLastSpawnTime = 0;

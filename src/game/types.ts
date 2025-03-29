@@ -134,6 +134,8 @@ export interface GameState {
   bossActive: boolean;
   lastBossSpawn: number;
   bossSpawnThreshold: number;
+  bossesDefeated: number;
+  bossKillCounter: number;
   lastShotTime: number;
   shootDelay: number;
   lastEnemySpawnTime: number;
