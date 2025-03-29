@@ -42,6 +42,9 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
     ...gameState
   });
   
+  // Flag to prevent multiple start attempts
+  const isStartingRef = useRef(false);
+  
   // Weapon names array
   const weaponNames = ["Standard Gun", "Shotgun", "Laser", "Plasma Cannon"];
 
@@ -116,22 +119,25 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
   };
   
   const handleStartGame = () => {
+    // Prevent multiple start attempts
+    if (isStartingRef.current) return;
+    isStartingRef.current = true;
+    
     if (gameEngineRef.current) {
-      gameEngineRef.current.state.gameStarted = true;
+      // Ensure game is stopped first
+      if (gameEngineRef.current.state.gameOver) {
+        gameEngineRef.current.resetGame();
+      }
       
-      // Add a small delay to ensure game engine is ready
-      setTimeout(() => {
-        // Ensure game is properly started
-        if (gameEngineRef.current) {
-          gameEngineRef.current.state.gameStarted = true;
-          
-          // Initialize game state if needed
-          if (!gameEngineRef.current.state.player) {
-            console.log("Initializing player");
-            gameEngineRef.current.resetGame();
-          }
-        }
-      }, 100);
+      // Start the game
+      gameEngineRef.current.state.gameStarted = true;
+      gameEngineRef.current.state.gameOver = false;
+      
+      // Ensure player is properly initialized
+      if (!gameEngineRef.current.state.player) {
+        console.log("Initializing player");
+        gameEngineRef.current.resetGame();
+      }
       
       // Show a toast notification
       toast({
@@ -139,6 +145,11 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
         description: "Use arrow keys to move and SPACE to shoot",
         duration: 3000,
       });
+      
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        isStartingRef.current = false;
+      }, 500);
     }
   };
   

@@ -8,20 +8,23 @@ interface GameStartScreenProps {
 }
 
 const GameStartScreen: React.FC<GameStartScreenProps> = ({ onStart }) => {
-  // Handle keyboard input directly in the component
-  React.useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        onStart();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
+  // Use a ref to track if we've already started
+  const hasStartedRef = React.useRef(false);
+  
+  // Safe onStart handler to prevent multiple calls
+  const handleStart = React.useCallback(() => {
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
+    onStart();
     
-    return () => {
-      window.removeEventListener('keydown', handleKeyPress);
-    };
+    // Reset the flag after a short delay
+    setTimeout(() => {
+      hasStartedRef.current = false;
+    }, 500);
   }, [onStart]);
+
+  // We'll remove the keyboard handler here to avoid conflicts with the one in Index.tsx
+  // This will prevent double-triggering of the start game action
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50">
@@ -62,7 +65,7 @@ const GameStartScreen: React.FC<GameStartScreenProps> = ({ onStart }) => {
       >
         <motion.button
           className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold w-full py-4 rounded-lg flex items-center justify-center gap-2 transition-colors mb-6"
-          onClick={onStart}
+          onClick={handleStart}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >

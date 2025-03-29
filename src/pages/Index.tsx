@@ -81,19 +81,11 @@ const Index = () => {
       myP5 = new p5(sketch, p5ContainerRef.current);
     }
     
-    // Handle keyboard events for the game
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && !gameState.gameStarted) {
-        handleStartGame();
-        e.preventDefault();
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
+    // Remove this event listener to prevent double-triggering game start
+    // This was likely causing the restart issue
     
     return () => {
       myP5?.remove();
-      window.removeEventListener('keydown', handleKeyDown);
     };
   }, [updateGameState, gameState.gameStarted, gameState.gameOver, handleStartGame]);
 
