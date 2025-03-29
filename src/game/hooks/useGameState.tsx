@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { GameEngine } from '../GameEngine';
 import { showWeaponChangeToast, showWeaponUpgradeToast, showEnemyDefeatedToast } from '../utils/toastManager';
