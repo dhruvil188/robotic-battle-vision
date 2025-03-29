@@ -124,6 +124,32 @@ export interface GameAssets {
   bossWarningSound?: p5.SoundFile;
 }
 
+export interface VisualEffects {
+  screenShake: number;
+  screenShakeIntensity: number;
+  flashEffect: {
+    active: boolean;
+    color: p5.Color;
+    alpha: number;
+    duration: number;
+  };
+  distortionEffect: {
+    active: boolean;
+    intensity: number;
+    duration: number;
+    centerX: number;
+    centerY: number;
+  };
+  scorePopups: {
+    value: number;
+    x: number;
+    y: number;
+    color: p5.Color;
+    life: number;
+    scale: number;
+  }[];
+}
+
 export interface GameState {
   player: PlayerType;
   enemies: EnemyType[];
@@ -153,4 +179,5 @@ export interface GameState {
   parallaxLayers: ParallaxLayerType[];
   tripleShot: number;
   speedBoost: number;
+  visualEffects: VisualEffects;
 }

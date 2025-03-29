@@ -1,6 +1,6 @@
 import p5 from "p5";
 import { toast } from "sonner";
-import { GameState, GameAssets, BulletType } from "./types";
+import { GameState, GameAssets, BulletType, VisualEffects } from "./types";
 import { Player } from "./entities/Player";
 import { Enemy } from "./entities/Enemy";
 import { Bullet } from "./entities/Bullet";
@@ -48,7 +48,25 @@ export class GameEngine {
       powerUpSpawnInterval: 10000,
       parallaxLayers: [],
       tripleShot: 0,
-      speedBoost: 0
+      speedBoost: 0,
+      visualEffects: {
+        screenShake: 0,
+        screenShakeIntensity: 0,
+        flashEffect: {
+          active: false,
+          color: null,
+          alpha: 0,
+          duration: 0
+        },
+        distortionEffect: {
+          active: false,
+          intensity: 0,
+          duration: 0,
+          centerX: 0,
+          centerY: 0
+        },
+        scorePopups: []
+      }
     };
   }
   
@@ -112,6 +130,10 @@ export class GameEngine {
     if (this.p.keyIsPressed && this.p.key === 'w' || this.p.key === 'W') {
       this.p.keyIsPressed = false; // Reset to prevent multiple switches
       this.state.player.switchWeapon();
+      
+      // Add flash effect for weapon switch
+      this.triggerFlashEffect(this.p.color(180, 180, 255), 60);
+      
       toast.info(`Switched to ${this.state.player.currentWeapon === 0 ? "Standard Gun" : "Shotgun"}`, {
         position: "bottom-center",
         duration: 1500,
@@ -228,9 +250,9 @@ export class GameEngine {
         } else if (this.state.score > 10) {
           if (typeRoll < 0.6) enemyType = 0; // Basic
           else if (typeRoll < 0.8) enemyType = 1; // Tanky
-          else enemyType = 2; // Fast
+          else if (typeRoll < 1.0) enemyType = 2; // Fast
         } else {
-          if (typeRoll < 0.8) enemyType = 0; // Basic
+          if (typeRoll < 1.0) enemyType = 0; // Basic
           else enemyType = 1; // Tanky
         }
         
@@ -433,6 +455,9 @@ export class GameEngine {
             this.state.backgroundParticles.push(hitParticle);
           }
           
+          // Add score popup
+          this.addScorePopup(this.state.bullets[i].damage, this.state.bullets[i].x, this.state.bullets[i].y);
+          
           // Remove bullet
           this.state.bullets.splice(i, 1);
           
@@ -448,7 +473,11 @@ export class GameEngine {
             );
             this.state.explosions.push(explosion);
             
-            // If it was a boss, create multiple explosions
+            // Add screen shake based on enemy size or if it's a boss
+            const shakeIntensity = this.state.enemies[j].isBoss ? 25 : Math.min(15, this.state.enemies[j].r * 0.5);
+            this.triggerScreenShake(shakeIntensity);
+            
+            // If it was a boss, create multiple explosions and distortion effect
             if (this.state.enemies[j].isBoss) {
               // Create additional explosions around the boss
               for (let k = 0; k < 5; k++) {
@@ -462,11 +491,22 @@ export class GameEngine {
                 this.state.explosions.push(bossExplosion);
               }
               
+              // Trigger distortion effect
+              this.triggerDistortionEffect(
+                this.state.enemies[j].x,
+                this.state.enemies[j].y,
+                30,
+                60
+              );
+              
+              // Add colorful flash effect for boss defeat
+              this.triggerFlashEffect(this.p.color(255, 100, 50), 100);
+              
               // Update boss state
               this.state.bossActive = false;
-              this.state.bossesDefeated++; // Increment the number of bosses defeated
+              this.state.bossesDefeated++;
               
-              // Increase score significantly for boss kill
+              // Increment the number of bosses defeated
               const baseScore = 25;
               const bossBonus = this.state.bossesDefeated * 5; // Each boss gives more points
               this.state.score += baseScore + bossBonus;
@@ -493,7 +533,7 @@ export class GameEngine {
               this.state.bossSpawnThreshold += 50;
             } else {
               // Regular enemy destroyed
-              this.state.score++; // Increase score
+              this.state.score++;
               
               // After first boss is defeated, count kills toward next boss spawn
               if (this.state.bossesDefeated > 0) {
@@ -535,18 +575,21 @@ export class GameEngine {
         // Apply power-up effect based on type
         if (this.state.powerUps[i].type === 0) { // Health
           this.state.player.health = Math.min(100, this.state.player.health + 20);
+          this.triggerFlashEffect(this.p.color(0, 255, 100), 80);
           toast.success("Health restored!", {
             position: "bottom-center",
             duration: 1500,
           });
         } else if (this.state.powerUps[i].type === 1) { // Shield
           this.state.player.shield = 300; // Shield duration
+          this.triggerFlashEffect(this.p.color(30, 144, 255), 80);
           toast.info("Shield activated!", {
             position: "bottom-center",
             duration: 1500,
           });
         } else if (this.state.powerUps[i].type === 2) { // Rapid fire
           this.state.shootDelay = 150; // Temporarily reduce cooldown
+          this.triggerFlashEffect(this.p.color(255, 220, 0), 80);
           setTimeout(() => {
             this.state.shootDelay = 300; // Reset after 5 seconds
           }, 5000);
@@ -556,6 +599,7 @@ export class GameEngine {
           });
         } else if (this.state.powerUps[i].type === 3) { // Triple shot
           this.state.tripleShot = 300; // Triple shot duration (frames)
+          this.triggerFlashEffect(this.p.color(180, 90, 255), 80);
           toast.info("Triple shot activated!", {
             position: "bottom-center",
             duration: 1500,
@@ -571,7 +615,14 @@ export class GameEngine {
           );
           this.state.explosions.push(explosion);
           
-          // Remove all enemies
+          // Add strong screen shake and distortion for bomb
+          this.triggerScreenShake(30);
+          this.triggerDistortionEffect(this.p.width/2, this.p.height/2, 40, 90);
+          
+          // Add flash effect for bomb
+          this.triggerFlashEffect(this.p.color(255, 100, 30), 120);
+          
+          // Clear all enemies
           for (let enemy of this.state.enemies) {
             this.state.score++; // Increase score for each enemy destroyed
             
@@ -596,6 +647,7 @@ export class GameEngine {
           });
         } else if (this.state.powerUps[i].type === 5) { // Speed boost
           this.state.speedBoost = 300; // Speed boost duration (frames)
+          this.triggerFlashEffect(this.p.color(0, 220, 220), 80);
           toast.info("Speed boost activated!", {
             position: "bottom-center",
             duration: 1500,
@@ -658,9 +710,17 @@ export class GameEngine {
           // Reduced shield effect
           this.state.player.shield -= 50 * bulletDamage;
           if (this.state.player.shield < 0) this.state.player.shield = 0;
+          
+          // Shield hit visual effect
+          this.triggerScreenShake(5);
+          this.triggerFlashEffect(this.p.color(30, 144, 255), 40);
         } else {
           this.state.player.health -= 10 * bulletDamage; // Decrease health based on bullet damage
           this.state.hitFlash = 5 * bulletDamage; // Trigger hit flash effect
+          
+          // Damage hit visual effects
+          this.triggerScreenShake(10 * bulletDamage);
+          this.triggerFlashEffect(this.p.color(255, 50, 50), 60);
           
           // Play sound
           if (this.assets.playerHitSound) this.assets.playerHitSound.play();
@@ -690,6 +750,10 @@ export class GameEngine {
               this.p.color(30, 144, 255, 200)
             );
             this.state.explosions.push(explosion);
+            
+            // Major screen shake and distortion for player death
+            this.triggerScreenShake(40);
+            this.triggerDistortionEffect(this.state.player.x, this.state.player.y, 50, 120);
             
             this.state.gameOver = true; // Game over state
             
@@ -751,8 +815,39 @@ export class GameEngine {
   }
   
   drawBackground() {
+    // Apply screen shake if active
+    if (this.state.visualEffects.screenShake > 0) {
+      const shakeAmount = this.state.visualEffects.screenShakeIntensity * (this.state.visualEffects.screenShake / 20);
+      this.p.translate(
+        this.p.random(-shakeAmount, shakeAmount),
+        this.p.random(-shakeAmount, shakeAmount)
+      );
+    }
+    
     // Draw space background
     this.p.background(10, 15, 30); // Deep space color
+    
+    // Apply distortion effect
+    if (this.state.visualEffects.distortionEffect.active && this.state.visualEffects.distortionEffect.intensity > 1) {
+      // This is a simplified distortion - in a real implementation, you might use shaders or more complex pixel manipulation
+      const intensity = this.state.visualEffects.distortionEffect.intensity;
+      const centerX = this.state.visualEffects.distortionEffect.centerX;
+      const centerY = this.state.visualEffects.distortionEffect.centerY;
+      
+      // Create a subtle distortion pattern
+      for (let i = 0; i < 20; i++) {
+        const angle = this.p.random(this.p.TWO_PI);
+        const distance = this.p.random(50, 200) * (intensity / 30);
+        const x1 = centerX + Math.cos(angle) * distance;
+        const y1 = centerY + Math.sin(angle) * distance;
+        const x2 = centerX + Math.cos(angle + 0.2) * (distance * 0.8);
+        const y2 = centerY + Math.sin(angle + 0.2) * (distance * 0.8);
+        
+        this.p.stroke(30, 70, 150, 20);
+        this.p.strokeWeight(this.p.random(1, 3));
+        this.p.line(x1, y1, x2, y2);
+      }
+    }
     
     // Render stars (parallax effect)
     for (let star of this.state.stars) {
@@ -951,6 +1046,43 @@ export class GameEngine {
       this.p.rect(0, 0, this.p.width, this.p.height);
       this.state.hitFlash--;
     }
+    
+    // Draw score popups
+    for (const popup of this.state.visualEffects.scorePopups) {
+      this.p.push();
+      this.p.fill(popup.color);
+      this.p.textSize(12 * popup.scale);
+      this.p.textAlign(this.p.CENTER);
+      
+      // Fade out as life decreases
+      const alpha = this.p.map(popup.life, 0, 30, 0, 255);
+      this.p.fill(popup.color.levels[0], popup.color.levels[1], popup.color.levels[2], alpha);
+      
+      this.p.text("+" + popup.value, popup.x, popup.y);
+      this.p.pop();
+    }
+    
+    // Draw flash effect overlay
+    if (this.state.visualEffects.flashEffect.active) {
+      this.p.push();
+      this.p.noStroke();
+      const flashColor = this.state.visualEffects.flashEffect.color;
+      const alpha = this.state.visualEffects.flashEffect.alpha;
+      
+      // Draw edge flash - more concentrated on edges
+      this.p.drawingContext.save();
+      const gradient = this.p.drawingContext.createRadialGradient(
+        this.p.width/2, this.p.height/2, 0,
+        this.p.width/2, this.p.height/2, this.p.width * 0.7
+      );
+      gradient.addColorStop(0, `rgba(${flashColor.levels[0]}, ${flashColor.levels[1]}, ${flashColor.levels[2]}, 0)`);
+      gradient.addColorStop(1, `rgba(${flashColor.levels[0]}, ${flashColor.levels[1]}, ${flashColor.levels[2]}, ${alpha/255})`);
+      
+      this.p.drawingContext.fillStyle = gradient;
+      this.p.rect(0, 0, this.p.width, this.p.height);
+      this.p.drawingContext.restore();
+      this.p.pop();
+    }
   }
   
   drawTitleScreen() {
@@ -1041,6 +1173,69 @@ export class GameEngine {
     this.state.tripleShot = 0;
     this.state.speedBoost = 0;
     this.state.shootDelay = 300;
+    this.state.visualEffects = {
+      screenShake: 0,
+      screenShakeIntensity: 0,
+      flashEffect: {
+        active: false,
+        color: null,
+        alpha: 0,
+        duration: 0
+      },
+      distortionEffect: {
+        active: false,
+        intensity: 0,
+        duration: 0,
+        centerX: 0,
+        centerY: 0
+      },
+      scorePopups: []
+    };
+  }
+  
+  updateVisualEffects() {
+    // Update screen shake
+    if (this.state.visualEffects.screenShake > 0) {
+      this.state.visualEffects.screenShake--;
+    }
+    
+    // Update flash effect
+    if (this.state.visualEffects.flashEffect.active) {
+      this.state.visualEffects.flashEffect.duration--;
+      this.state.visualEffects.flashEffect.alpha *= 0.85;
+      
+      if (this.state.visualEffects.flashEffect.duration <= 0) {
+        this.state.visualEffects.flashEffect.active = false;
+      }
+    }
+    
+    // Update distortion effect
+    if (this.state.visualEffects.distortionEffect.active) {
+      this.state.visualEffects.distortionEffect.duration--;
+      this.state.visualEffects.distortionEffect.intensity *= 0.95;
+      
+      if (this.state.visualEffects.distortionEffect.duration <= 0) {
+        this.state.visualEffects.distortionEffect.active = false;
+      }
+    }
+    
+    // Update score popups
+    for (let i = this.state.visualEffects.scorePopups.length - 1; i >= 0; i--) {
+      const popup = this.state.visualEffects.scorePopups[i];
+      popup.y -= 1;
+      popup.life--;
+      
+      // Scale up and then down for a "pop" effect
+      if (popup.life > 25) {
+        popup.scale = this.p.map(popup.life, 30, 25, 0.5, 1.2);
+      } else {
+        popup.scale = this.p.map(popup.life, 25, 0, 1.2, 0.8);
+      }
+      
+      if (popup.life <= 0) {
+        this.state.visualEffects.scorePopups.splice(i, 1);
+      }
+    }
   }
   
   update() {
@@ -1061,7 +1256,25 @@ export class GameEngine {
     this.spawnPowerUps();
     this.updateEntities();
     this.checkCollisions();
+    
+    // Save the current transformation matrix before drawing entities
+    this.p.push();
+    
+    // Apply screen shake effect to the game world
+    if (this.state.visualEffects.screenShake > 0) {
+      const shakeAmount = this.state.visualEffects.screenShakeIntensity * (this.state.visualEffects.screenShake / 20);
+      this.p.translate(
+        this.p.random(-shakeAmount, shakeAmount),
+        this.p.random(-shakeAmount, shakeAmount)
+      );
+    }
+    
     this.drawEntities();
+    
+    // Restore the transformation matrix after drawing entities
+    this.p.pop();
+    
+    // Draw UI elements without screen shake
     this.drawInterface();
   }
   
@@ -1136,5 +1349,36 @@ export class GameEngine {
     this.p.vertex(x, y + size/4);
     this.p.vertex(x + size/4, y);
     this.p.endShape();
+  }
+  
+  triggerScreenShake(intensity: number) {
+    this.state.visualEffects.screenShake = 20; // Duration in frames
+    this.state.visualEffects.screenShakeIntensity = intensity;
+  }
+  
+  triggerFlashEffect(color: p5.Color, alpha: number) {
+    this.state.visualEffects.flashEffect.active = true;
+    this.state.visualEffects.flashEffect.color = color;
+    this.state.visualEffects.flashEffect.alpha = alpha;
+    this.state.visualEffects.flashEffect.duration = 15; // Duration in frames
+  }
+  
+  triggerDistortionEffect(x: number, y: number, intensity: number, duration: number) {
+    this.state.visualEffects.distortionEffect.active = true;
+    this.state.visualEffects.distortionEffect.centerX = x;
+    this.state.visualEffects.distortionEffect.centerY = y;
+    this.state.visualEffects.distortionEffect.intensity = intensity;
+    this.state.visualEffects.distortionEffect.duration = duration;
+  }
+  
+  addScorePopup(value: number, x: number, y: number) {
+    this.state.visualEffects.scorePopups.push({
+      value: value,
+      x: x,
+      y: y,
+      color: this.p.color(255, 255, 100),
+      life: 30,
+      scale: 1.0
+    });
   }
 }
