@@ -265,10 +265,6 @@ export class GameEngine {
     const bossX = this.p.width / 2;
     const bossY = -50;
     
-    // Make bosses tougher as more are defeated
-    const healthMultiplier = 1 + (this.state.bossesDefeated * 0.3);
-    const damageMultiplier = 1 + (this.state.bossesDefeated * 0.2);
-    
     const boss = new Enemy(
       this.p,
       bossX,
@@ -276,9 +272,7 @@ export class GameEngine {
       30, // Larger radius
       1.5, // Speed
       undefined, // Random type
-      true, // Is boss
-      healthMultiplier, // Health multiplier for tougher bosses
-      damageMultiplier // Damage multiplier for stronger attacks
+      true // Is boss
     );
     
     this.state.enemies.push(boss);
