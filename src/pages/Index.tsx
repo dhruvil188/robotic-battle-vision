@@ -126,9 +126,9 @@ const Index = () => {
       <div ref={gameContainerRef} className="w-full h-screen overflow-hidden relative">
         <div ref={p5ContainerRef} className="w-full h-full" />
         
-        {/* Game UI Overlay */}
+        {/* Game UI Overlay - Only show when game is started and not over */}
         {gameStarted && !gameOver && (
-          <div className="absolute top-0 left-0 w-full p-4 pointer-events-none z-10">
+          <div className="absolute top-0 left-0 w-full p-4 pointer-events-none z-20">
             <div className="flex flex-col justify-between h-[calc(100vh-2rem)] max-w-7xl mx-auto">
               {/* Top row with health, score and gold */}
               <div className="flex justify-between items-start">
