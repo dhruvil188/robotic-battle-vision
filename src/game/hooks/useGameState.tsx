@@ -1,7 +1,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { GameEngine } from '../GameEngine';
-import { showWeaponChangeToast, showWeaponUpgradeToast, showEnemyDefeatedToast } from '../utils/toastManager';
 import { toast } from "@/hooks/use-toast";
 
 export interface GameState {
@@ -9,15 +8,19 @@ export interface GameState {
   maxHealth: number;
   score: number;
   gold: number;
-  enemiesDestroyed: number;
+  zombiesKilled: number;
   bossesDefeated: number;
+  baseHealth: number;
+  maxBaseHealth: number;
   shopOpen: boolean;
   shopItems: any[];
   gameStarted: boolean;
   gameOver: boolean;
   currentWeapon: number;
   weaponLevels: number[];
-  previousWeapon?: number;
+  ammo: number;
+  maxAmmo: number;
+  wave: number;
 }
 
 export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | null>) => {
@@ -27,14 +30,19 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
     maxHealth: 100,
     score: 0,
     gold: 0,
-    enemiesDestroyed: 0,
+    zombiesKilled: 0,
     bossesDefeated: 0,
+    baseHealth: 100,
+    maxBaseHealth: 100,
     shopOpen: false,
     shopItems: [],
     gameStarted: false,
     gameOver: false,
     currentWeapon: 0,
-    weaponLevels: [0, 0, 0, 0],
+    weaponLevels: [1, 0, 0],
+    ammo: 30,
+    maxAmmo: 30,
+    wave: 1
   });
 
   // Previous state for comparisons
@@ -48,7 +56,7 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
   const isInitializingRef = useRef(false);
   
   // Weapon names array
-  const weaponNames = ["Standard Gun", "Shotgun", "Laser", "Plasma Cannon"];
+  const weaponNames = ["Pistol", "Shotgun", "Assault Rifle"];
 
   // Update state from game engine
   const updateGameState = () => {
@@ -67,14 +75,18 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
         maxHealth: 100,
         score: engine.state.score,
         gold: engine.state.gold,
-        enemiesDestroyed: engine.state.enemiesDestroyed,
+        zombiesKilled: engine.state.zombiesKilled,
         bossesDefeated: engine.state.bossesDefeated,
+        baseHealth: engine.state.baseHealth,
+        maxBaseHealth: engine.state.maxBaseHealth,
         shopOpen: engine.state.shopOpen,
         shopItems: engine.state.shopItems,
         gameStarted: engine.state.gameStarted,
         gameOver: engine.state.gameOver,
-        weaponLevels: engine.state.weaponLevels || [0, 0, 0, 0],
-        previousWeapon: prevState.currentWeapon,
+        weaponLevels: engine.state.weaponLevels || [1, 0, 0],
+        ammo: engine.state.ammo,
+        maxAmmo: engine.state.maxAmmo,
+        wave: engine.state.wave
       };
       
       if (engine.state.player) {
@@ -91,20 +103,42 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
     
     // Check for weapon change
     if (gameState.currentWeapon !== prevState.currentWeapon && gameState.gameStarted) {
-      showWeaponChangeToast(weaponNames[gameState.currentWeapon]);
+      toast({
+        title: "Weapon Changed",
+        description: `Switched to ${weaponNames[gameState.currentWeapon]}`,
+        duration: 2000,
+      });
     }
     
     // Check for weapon upgrade
     for (let i = 0; i < gameState.weaponLevels.length; i++) {
       if (gameState.weaponLevels[i] > prevState.weaponLevels[i] && gameState.weaponLevels[i] > 0) {
-        showWeaponUpgradeToast(weaponNames[i], gameState.weaponLevels[i]);
+        toast({
+          title: "Weapon Upgraded",
+          description: `${weaponNames[i]} upgraded to level ${gameState.weaponLevels[i]}`,
+          duration: 2000,
+        });
         break;
       }
     }
     
+    // Check for wave change
+    if (gameState.wave > prevState.wave) {
+      toast({
+        title: "New Wave",
+        description: `Wave ${gameState.wave} incoming!`,
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+    
     // Check for boss defeated
     if (gameState.bossesDefeated > prevState.bossesDefeated) {
-      showEnemyDefeatedToast(true);
+      toast({
+        title: "Boss Defeated",
+        description: "You've taken down a boss zombie!",
+        duration: 3000,
+      });
     }
     
     // Update previous state reference
@@ -144,7 +178,7 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
       // Show a toast notification
       toast({
         title: "Game Started!",
-        description: "Use arrow keys to move and SPACE to shoot",
+        description: "Use mouse to aim and click to shoot. Defend your base!",
         duration: 3000,
       });
       

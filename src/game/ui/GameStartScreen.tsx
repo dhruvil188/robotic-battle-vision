@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Star, Info, Settings } from 'lucide-react';
+import { Gun, Info, Settings } from 'lucide-react';
 
 interface GameStartScreenProps {
   onStart: () => void;
@@ -34,17 +34,17 @@ const GameStartScreen: React.FC<GameStartScreenProps> = ({ onStart }) => {
         transition={{ delay: 0.3, duration: 0.5 }}
       >
         <motion.h1 
-          className="text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500"
+          className="text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500"
           animate={{ 
             textShadow: [
-              "0 0 5px rgba(59, 130, 246, 0.5)", 
-              "0 0 20px rgba(59, 130, 246, 0.8)", 
-              "0 0 5px rgba(59, 130, 246, 0.5)"
+              "0 0 5px rgba(220, 38, 38, 0.5)", 
+              "0 0 20px rgba(220, 38, 38, 0.8)", 
+              "0 0 5px rgba(220, 38, 38, 0.5)"
             ] 
           }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          SPACE SHOOTER
+          ZOMBIE DEFENSE
         </motion.h1>
         <motion.div 
           className="text-gray-400 mt-2 text-lg"
@@ -52,7 +52,7 @@ const GameStartScreen: React.FC<GameStartScreenProps> = ({ onStart }) => {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
         >
-          Are you ready for the challenge?
+          Defend your base from the zombie horde!
         </motion.div>
       </motion.div>
       
@@ -63,38 +63,38 @@ const GameStartScreen: React.FC<GameStartScreenProps> = ({ onStart }) => {
         transition={{ delay: 0.8, type: "spring" }}
       >
         <motion.button
-          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold w-full py-4 rounded-lg flex items-center justify-center gap-2 transition-colors mb-6"
+          className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-bold w-full py-4 rounded-lg flex items-center justify-center gap-2 transition-colors mb-6"
           onClick={handleStart}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          <Star className="text-yellow-300" size={20} />
+          <Gun className="text-white" size={20} />
           <span className="text-xl">START GAME</span>
         </motion.button>
         
         <div className="space-y-4 mb-4">
           <div className="bg-gray-800/70 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-blue-400 font-semibold mb-2">
+            <div className="flex items-center gap-2 text-red-400 font-semibold mb-2">
               <Info size={18} />
               <span>CONTROLS</span>
             </div>
             <ul className="text-gray-300 space-y-2 text-sm">
-              <li>• Arrow keys to move ship</li>
-              <li>• SPACE to shoot</li>
-              <li>• W to change weapons</li>
-              <li>• S to open shop</li>
+              <li>• Mouse to aim</li>
+              <li>• Click to shoot</li>
+              <li>• R to reload</li>
+              <li>• 1-3 to change weapons</li>
             </ul>
           </div>
           
           <div className="bg-gray-800/70 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-purple-400 font-semibold mb-2">
+            <div className="flex items-center gap-2 text-orange-400 font-semibold mb-2">
               <Settings size={18} />
               <span>TIPS</span>
             </div>
             <ul className="text-gray-300 space-y-2 text-sm">
-              <li>• Collect gold to buy upgrades</li>
-              <li>• Watch out for boss enemies</li>
-              <li>• Different weapons work better against different enemies</li>
+              <li>• Headshots deal extra damage</li>
+              <li>• Repair your base between waves</li>
+              <li>• Upgrade weapons for better damage</li>
             </ul>
           </div>
         </div>
@@ -108,7 +108,7 @@ const GameStartScreen: React.FC<GameStartScreenProps> = ({ onStart }) => {
         animate={{ opacity: 1 }}
         transition={{ delay: 1.2 }}
       >
-        <div>© 2023 Space Shooter</div>
+        <div>© 2023 Zombie Defense</div>
         <div className="text-sm">Made with ♥ by Lovable</div>
       </motion.div>
     </div>
