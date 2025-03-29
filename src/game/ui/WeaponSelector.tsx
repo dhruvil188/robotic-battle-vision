@@ -16,9 +16,9 @@ export const WeaponSelector: React.FC<WeaponSelectorProps> = ({
       {weaponNames.map((_, index) => (
         <div 
           key={index}
-          className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+          className={`h-2 flex-1 rounded-full transition-all duration-300 ${
             index === currentWeapon 
-              ? getWeaponColor(index).replace("text-", "bg-") 
+              ? `${getWeaponColor(index).replace("text-", "bg-")} animate-pulse` 
               : 'bg-slate-700'
           }`}
         />

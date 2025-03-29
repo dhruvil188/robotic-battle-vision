@@ -117,6 +117,29 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
   const handleStartGame = () => {
     if (gameEngineRef.current) {
       gameEngineRef.current.state.gameStarted = true;
+      
+      // Add a small delay to ensure game engine is ready
+      setTimeout(() => {
+        // Ensure game is properly started
+        if (gameEngineRef.current) {
+          gameEngineRef.current.state.gameStarted = true;
+          
+          // Initialize game state if needed
+          if (!gameEngineRef.current.state.player) {
+            console.log("Initializing player");
+            gameEngineRef.current.resetGame();
+          }
+        }
+      }, 100);
+      
+      // Show a toast notification
+      import('../utils/toastManager').then(({ toast }) => {
+        toast({
+          title: "Game Started!",
+          description: "Use arrow keys to move and SPACE to shoot",
+          duration: 3000,
+        });
+      });
     }
   };
   
