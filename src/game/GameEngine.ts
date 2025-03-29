@@ -655,4 +655,567 @@ export class GameEngine {
           let color;
           if (this.state.powerUps[i].type === 0) color = this.p.color(0, 255, 100, 200);
           else if (this.state.powerUps[i].type === 1) color = this.p.color(30, 144, 255, 200);
-          else if (this.state.powerUps[i
+          else if (this.state.powerUps[i].type === 2) color = this.p.color(255, 220, 0, 200);
+          else if (this.state.powerUps[i].type === 3) color = this.p.color(180, 90, 255, 200);
+          else if (this.state.powerUps[i].type === 4) color = this.p.color(255, 100, 30, 200);
+          else color = this.p.color(0, 220, 220, 200);
+          
+          let powerUpParticle = new Particle(
+            this.p,
+            this.state.powerUps[i].x,
+            this.state.powerUps[i].y,
+            this.p.random(-3, 3),
+            this.p.random(-3, 3),
+            color,
+            this.p.random(3, 8),
+            this.p.random(20, 30)
+          );
+          this.state.backgroundParticles.push(powerUpParticle);
+        }
+        
+        // Remove power-up
+        this.state.powerUps.splice(i, 1);
+        
+        // Play sound
+        if (this.assets.powerUpSound) {
+          try {
+            this.assets.powerUpSound.play();
+          } catch (error) {
+            console.log("Error playing power-up sound:", error);
+          }
+        }
+        
+        break; // Exit loop after collecting power-up
+      }
+    }
+    
+    // Collision detection: enemy bullets vs player
+    if (!this.state.gameOver && this.state.player.shield <= 0) { // Only check if no shield and game not over
+      for (let i = this.state.enemyBullets.length - 1; i >= 0; i--) {
+        let d = this.p.dist(
+          this.state.enemyBullets[i].x, 
+          this.state.enemyBullets[i].y, 
+          this.state.player.x, 
+          this.state.player.y
+        );
+        
+        if (d < this.state.player.r - 5) {
+          // Player takes damage
+          this.state.player.health -= 10;
+          
+          // Add hit flash effect
+          this.state.hitFlash = 15;
+          
+          // Add screen shake when player gets hit
+          this.triggerScreenShake(5);
+          
+          // Add flash effect when player gets hit
+          this.triggerFlashEffect(this.p.color(255, 0, 0), 60);
+          
+          // Create hit particles
+          for (let j = 0; j < 10; j++) {
+            let hitParticle = new Particle(
+              this.p,
+              this.state.enemyBullets[i].x,
+              this.state.enemyBullets[i].y,
+              this.p.random(-3, 3),
+              this.p.random(-3, 3),
+              this.p.color(255, 100, 100, 200),
+              this.p.random(3, 8),
+              this.p.random(20, 30)
+            );
+            this.state.backgroundParticles.push(hitParticle);
+          }
+          
+          // Remove bullet
+          this.state.enemyBullets.splice(i, 1);
+          
+          // Check if game over
+          if (this.state.player.health <= 0) {
+            this.gameOver();
+          }
+          
+          // Play sound
+          if (this.assets.playerHitSound) {
+            try {
+              this.assets.playerHitSound.play();
+            } catch (error) {
+              console.log("Error playing player hit sound:", error);
+            }
+          }
+          
+          break; // Exit loop after hit
+        }
+      }
+    }
+    
+    // Collision detection: player vs enemies
+    if (!this.state.gameOver && this.state.player.shield <= 0) { // Only check if no shield and game not over
+      for (let i = this.state.enemies.length - 1; i >= 0; i--) {
+        let d = this.p.dist(
+          this.state.enemies[i].x, 
+          this.state.enemies[i].y, 
+          this.state.player.x, 
+          this.state.player.y
+        );
+        
+        if (d < this.state.player.r + this.state.enemies[i].r - 15) {
+          // Player takes damage
+          this.state.player.health -= 20;
+          
+          // Add hit flash effect
+          this.state.hitFlash = 15;
+          
+          // Add screen shake when player gets hit
+          this.triggerScreenShake(8);
+          
+          // Add flash effect when player gets hit
+          this.triggerFlashEffect(this.p.color(255, 0, 0), 80);
+          
+          // Create explosion at collision point
+          let explosion = new Explosion(
+            this.p,
+            (this.state.player.x + this.state.enemies[i].x) / 2,
+            (this.state.player.y + this.state.enemies[i].y) / 2,
+            Math.max(20, this.state.enemies[i].r * 1.5),
+            this.p.color(255, 100, 50, 200)
+          );
+          this.state.explosions.push(explosion);
+          
+          // Check if game over
+          if (this.state.player.health <= 0) {
+            this.gameOver();
+            return;
+          }
+          
+          // Remove enemy
+          this.state.enemies.splice(i, 1);
+          
+          // Play sound
+          if (this.assets.playerHitSound) {
+            try {
+              this.assets.playerHitSound.play();
+            } catch (error) {
+              console.log("Error playing player hit sound:", error);
+            }
+          }
+          
+          break; // Exit loop after collision
+        }
+      }
+    }
+  }
+  
+  update() {
+    if (!this.state.gameStarted) {
+      // Draw stars in the background
+      this.p.background(0);
+      for (let star of this.state.stars) {
+        star.update();
+        star.draw();
+      }
+      
+      // Display start game message
+      this.p.fill(255);
+      this.p.textSize(32);
+      this.p.textAlign(this.p.CENTER);
+      this.p.text("SPACE SHOOTER", this.p.width / 2, this.p.height / 2 - 40);
+      this.p.textSize(16);
+      this.p.text("Press ENTER to start", this.p.width / 2, this.p.height / 2 + 20);
+      this.p.text("Arrow keys to move, SPACE to shoot", this.p.width / 2, this.p.height / 2 + 50);
+      this.p.text("W to change weapons", this.p.width / 2, this.p.height / 2 + 80);
+      
+      // Check for ENTER key to start game
+      if (this.p.keyIsDown(13)) {
+        this.state.gameStarted = true;
+      }
+      return;
+    }
+    
+    if (this.state.gameOver) {
+      // Draw stars in the background
+      this.p.background(0);
+      for (let star of this.state.stars) {
+        star.update();
+        star.draw();
+      }
+      
+      // Display game over message
+      this.p.fill(255, 0, 0);
+      this.p.textSize(40);
+      this.p.textAlign(this.p.CENTER);
+      this.p.text("GAME OVER", this.p.width / 2, this.p.height / 2 - 40);
+      this.p.fill(255);
+      this.p.textSize(20);
+      this.p.text(`Final Score: ${this.state.score}`, this.p.width / 2, this.p.height / 2 + 20);
+      this.p.text(`Enemies Destroyed: ${this.state.enemiesDestroyed}`, this.p.width / 2, this.p.height / 2 + 50);
+      this.p.text(`Bosses Defeated: ${this.state.bossesDefeated}`, this.p.width / 2, this.p.height / 2 + 80);
+      this.p.textSize(16);
+      this.p.text("Press ENTER to play again", this.p.width / 2, this.p.height / 2 + 130);
+      
+      // Check for ENTER key to restart game
+      if (this.p.keyIsDown(13)) {
+        this.resetGame();
+      }
+      return;
+    }
+    
+    // Clear background
+    this.p.background(0);
+    
+    // Update parallax layers
+    for (let layer of this.state.parallaxLayers) {
+      layer.update();
+      layer.draw();
+    }
+    
+    // Update stars
+    for (let star of this.state.stars) {
+      star.update();
+      star.draw();
+    }
+    
+    // Handle input
+    this.handleInput();
+    
+    // Spawn enemies
+    this.spawnEnemies();
+    
+    // Spawn power-ups
+    this.spawnPowerUps();
+    
+    // Update all entities
+    this.updateEntities();
+    
+    // Check for collisions
+    this.checkCollisions();
+    
+    // Apply visual effects
+    this.applyVisualEffects();
+    
+    // Update player shield opacity for visual feedback
+    if (this.state.player.shield > 0) {
+      this.state.player.shield--;
+      this.state.shieldOpacity = this.p.map(this.state.player.shield, 0, 300, 0, 150);
+    } else {
+      this.state.shieldOpacity = 0;
+    }
+    
+    // Draw all entities
+    this.drawEntities();
+    
+    // Draw UI
+    this.drawUI();
+    
+    // Gradually reduce visual effects
+    this.updateVisualEffects();
+  }
+  
+  drawEntities() {
+    // Draw player
+    if (!this.state.gameOver) {
+      this.state.player.draw();
+      
+      // Draw shield effect if active
+      if (this.state.shieldOpacity > 0) {
+        this.p.noFill();
+        this.p.stroke(30, 144, 255, this.state.shieldOpacity);
+        this.p.strokeWeight(3);
+        this.p.ellipse(this.state.player.x, this.state.player.y, this.state.player.r * 2.5);
+        this.p.strokeWeight(1);
+      }
+    }
+    
+    // Draw enemies
+    for (let enemy of this.state.enemies) {
+      enemy.draw();
+    }
+    
+    // Draw player bullets
+    for (let bullet of this.state.bullets) {
+      bullet.draw();
+    }
+    
+    // Draw enemy bullets
+    for (let bullet of this.state.enemyBullets) {
+      bullet.draw();
+    }
+    
+    // Draw power-ups
+    for (let powerUp of this.state.powerUps) {
+      powerUp.draw();
+    }
+    
+    // Draw background particles
+    for (let particle of this.state.backgroundParticles) {
+      particle.draw();
+    }
+    
+    // Draw explosions
+    for (let explosion of this.state.explosions) {
+      explosion.draw();
+    }
+  }
+  
+  drawUI() {
+    // Health bar
+    this.p.noStroke();
+    this.p.fill(50);
+    this.p.rect(20, 20, 200, 20, 5);
+    const healthColor = this.p.color(
+      this.p.map(this.state.player.health, 0, 100, 255, 0),
+      this.p.map(this.state.player.health, 0, 100, 0, 255),
+      0
+    );
+    this.p.fill(healthColor);
+    this.p.rect(20, 20, this.p.map(this.state.player.health, 0, 100, 0, 200), 20, 5);
+    this.p.fill(255);
+    this.p.textSize(14);
+    this.p.textAlign(this.p.CENTER);
+    this.p.text(`Health: ${this.state.player.health}`, 120, 35);
+    
+    // Score
+    this.p.textAlign(this.p.RIGHT);
+    this.p.textSize(20);
+    this.p.text(`Score: ${this.state.score}`, this.p.width - 20, 30);
+    
+    // Active power-ups indicators
+    let powerUpY = 60;
+    this.p.textAlign(this.p.LEFT);
+    this.p.textSize(14);
+    
+    if (this.state.tripleShot > 0) {
+      this.p.fill(180, 90, 255);
+      this.p.text(`Triple Shot: ${Math.ceil(this.state.tripleShot / 60)}s`, 20, powerUpY);
+      powerUpY += 25;
+    }
+    
+    if (this.state.speedBoost > 0) {
+      this.p.fill(0, 220, 220);
+      this.p.text(`Speed Boost: ${Math.ceil(this.state.speedBoost / 60)}s`, 20, powerUpY);
+      powerUpY += 25;
+    }
+    
+    if (this.state.player.shield > 0) {
+      this.p.fill(30, 144, 255);
+      this.p.text(`Shield: ${Math.ceil(this.state.player.shield / 60)}s`, 20, powerUpY);
+    }
+    
+    // Weapon indicator
+    this.p.textAlign(this.p.RIGHT);
+    const weaponName = this.state.player.currentWeapon === 0 ? "Standard Gun" : "Shotgun";
+    this.p.fill(255);
+    this.p.text(`Weapon: ${weaponName}`, this.p.width - 20, 60);
+    
+    // Display boss health bar if boss is active
+    let bossFound = false;
+    for (let enemy of this.state.enemies) {
+      if (enemy.isBoss) {
+        bossFound = true;
+        // Boss health bar at top center
+        const bossHealthWidth = 300;
+        const bossHealthHeight = 15;
+        this.p.fill(50);
+        this.p.rect(this.p.width / 2 - bossHealthWidth / 2, 10, bossHealthWidth, bossHealthHeight, 3);
+        
+        this.p.fill(255, 50, 50);
+        const bossHealthPercent = enemy.health / enemy.maxHealth;
+        this.p.rect(this.p.width / 2 - bossHealthWidth / 2, 10, bossHealthWidth * bossHealthPercent, bossHealthHeight, 3);
+        
+        this.p.fill(255);
+        this.p.textAlign(this.p.CENTER);
+        this.p.textSize(12);
+        this.p.text(`BOSS LVL ${this.state.bossesDefeated + 1}`, this.p.width / 2, 35);
+        break;
+      }
+    }
+    
+    // Update boss active state based on whether a boss was found
+    this.state.bossActive = bossFound;
+    
+    // Display hit flash effect
+    if (this.state.hitFlash > 0) {
+      this.p.noStroke();
+      this.p.fill(255, 0, 0, this.state.hitFlash * 6);
+      this.p.rect(0, 0, this.p.width, this.p.height);
+      this.state.hitFlash--;
+    }
+  }
+  
+  applyVisualEffects() {
+    // Apply screen shake
+    if (this.state.visualEffects.screenShake > 0) {
+      const shakeAmount = this.state.visualEffects.screenShakeIntensity * 
+                          (this.state.visualEffects.screenShake / 30);
+      this.p.translate(
+        this.p.random(-shakeAmount, shakeAmount),
+        this.p.random(-shakeAmount, shakeAmount)
+      );
+    }
+    
+    // Apply flash effect
+    if (this.state.visualEffects.flashEffect.active) {
+      this.p.noStroke();
+      this.p.fill(
+        this.p.red(this.state.visualEffects.flashEffect.color),
+        this.p.green(this.state.visualEffects.flashEffect.color),
+        this.p.blue(this.state.visualEffects.flashEffect.color),
+        this.state.visualEffects.flashEffect.alpha
+      );
+      this.p.rect(0, 0, this.p.width, this.p.height);
+    }
+    
+    // Apply distortion effect
+    if (this.state.visualEffects.distortionEffect.active) {
+      // Simple distortion effect - not implemented fully
+      // Will need shader implementation for real distortion
+    }
+  }
+  
+  updateVisualEffects() {
+    // Update screen shake
+    if (this.state.visualEffects.screenShake > 0) {
+      this.state.visualEffects.screenShake -= 1;
+    } else {
+      this.state.visualEffects.screenShake = 0;
+    }
+    
+    // Update flash effect
+    if (this.state.visualEffects.flashEffect.active) {
+      this.state.visualEffects.flashEffect.alpha -= 
+        this.state.visualEffects.flashEffect.alpha / 
+        this.state.visualEffects.flashEffect.duration * 2;
+      
+      if (this.state.visualEffects.flashEffect.alpha <= 1) {
+        this.state.visualEffects.flashEffect.active = false;
+      }
+    }
+    
+    // Update distortion effect
+    if (this.state.visualEffects.distortionEffect.active) {
+      this.state.visualEffects.distortionEffect.intensity -= 
+        this.state.visualEffects.distortionEffect.intensity / 
+        this.state.visualEffects.distortionEffect.duration * 2;
+      
+      if (this.state.visualEffects.distortionEffect.intensity <= 0.1) {
+        this.state.visualEffects.distortionEffect.active = false;
+      }
+    }
+  }
+  
+  triggerScreenShake(intensity: number, duration: number = 30) {
+    // Only trigger if the new shake would be stronger than current
+    if (intensity > this.state.visualEffects.screenShakeIntensity || 
+        this.state.visualEffects.screenShake <= 0) {
+      this.state.visualEffects.screenShake = duration;
+      this.state.visualEffects.screenShakeIntensity = intensity;
+    }
+  }
+  
+  triggerFlashEffect(color: p5.Color, alpha: number = 100, duration: number = 30) {
+    this.state.visualEffects.flashEffect.active = true;
+    this.state.visualEffects.flashEffect.color = color;
+    this.state.visualEffects.flashEffect.alpha = alpha;
+    this.state.visualEffects.flashEffect.duration = duration;
+  }
+  
+  triggerDistortionEffect(centerX: number, centerY: number, intensity: number = 10, duration: number = 30) {
+    this.state.visualEffects.distortionEffect.active = true;
+    this.state.visualEffects.distortionEffect.centerX = centerX;
+    this.state.visualEffects.distortionEffect.centerY = centerY;
+    this.state.visualEffects.distortionEffect.intensity = intensity;
+    this.state.visualEffects.distortionEffect.duration = duration;
+  }
+  
+  windowResized() {
+    // Handle window resize
+  }
+  
+  keyReleased(keyCode: number) {
+    // Handle key released
+    return true;
+  }
+  
+  resetGame() {
+    // Reset game state
+    this.state.player = new Player(this.p, this.p.width / 2, this.p.height - 100, 60, 40);
+    this.state.enemies = [];
+    this.state.bullets = [];
+    this.state.enemyBullets = [];
+    this.state.score = 0;
+    this.state.enemiesDestroyed = 0;
+    this.state.bossActive = false;
+    this.state.lastBossSpawn = 0;
+    this.state.bossSpawnThreshold = 50;
+    this.state.bossesDefeated = 0;
+    this.state.bossKillCounter = 0;
+    this.state.lastShotTime = 0;
+    this.state.shootDelay = 300;
+    this.state.lastEnemySpawnTime = 0;
+    this.state.enemySpawnInterval = 1500;
+    this.state.hitFlash = 0;
+    this.state.backgroundParticles = [];
+    this.state.gameOver = false;
+    this.state.explosions = [];
+    this.state.shieldOpacity = 0;
+    this.state.powerUps = [];
+    this.state.powerUpLastSpawnTime = 0;
+    this.state.powerUpSpawnInterval = 10000;
+    this.state.tripleShot = 0;
+    this.state.speedBoost = 0;
+    this.state.visualEffects = {
+      screenShake: 0,
+      screenShakeIntensity: 0,
+      flashEffect: {
+        active: false,
+        color: this.p.color(255),
+        alpha: 0,
+        duration: 0
+      },
+      distortionEffect: {
+        active: false,
+        intensity: 0,
+        duration: 0,
+        centerX: 0,
+        centerY: 0
+      }
+    };
+  }
+  
+  gameOver() {
+    if (!this.state.gameOver) {
+      this.state.gameOver = true;
+      
+      // Create multiple explosions at player's ship
+      for (let i = 0; i < 3; i++) {
+        let explosion = new Explosion(
+          this.p,
+          this.state.player.x + this.p.random(-30, 30),
+          this.state.player.y + this.p.random(-30, 30),
+          this.p.random(30, 50),
+          this.p.color(255, 100, 50, 200)
+        );
+        this.state.explosions.push(explosion);
+      }
+      
+      // Add screen shake and flash
+      this.triggerScreenShake(20, 60);
+      this.triggerFlashEffect(this.p.color(255, 0, 0), 150, 60);
+      
+      // Play game over sound
+      if (this.assets.gameOverSound) {
+        try {
+          this.assets.gameOverSound.play();
+        } catch (error) {
+          console.log("Error playing game over sound:", error);
+        }
+      }
+      
+      // Show game over toast
+      toast.error(`Game Over! Score: ${this.state.score}`, {
+        position: "top-center",
+        duration: 5000,
+      });
+    }
+  }
+}
