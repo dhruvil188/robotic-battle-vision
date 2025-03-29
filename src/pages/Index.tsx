@@ -124,13 +124,14 @@ const Index = () => {
       transition={{ duration: 0.6 }}
     >
       <div ref={gameContainerRef} className="w-full h-screen overflow-hidden relative">
+        {/* Canvas Container - This is where p5 will render the game */}
         <div ref={p5ContainerRef} className="w-full h-full" />
         
-        {/* Game UI Overlay - Only show when game is started and not over */}
+        {/* Custom UI Overlay - Only visible when game is active */}
         {gameStarted && !gameOver && (
-          <div className="absolute top-0 left-0 w-full p-4 pointer-events-none z-20">
+          <div className="absolute top-0 left-0 w-full p-4 pointer-events-none z-50">
             <div className="flex flex-col justify-between h-[calc(100vh-2rem)] max-w-7xl mx-auto">
-              {/* Top row with health, score and gold */}
+              {/* Top row with health and score */}
               <div className="flex justify-between items-start">
                 <div className="pointer-events-auto">
                   <HealthBar health={playerHealth} maxHealth={maxHealth} />

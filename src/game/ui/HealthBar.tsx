@@ -19,7 +19,7 @@ const HealthBar: React.FC<HealthBarProps> = ({ health, maxHealth }) => {
   };
 
   return (
-    <div className="flex items-center gap-2 bg-black/90 p-2 rounded-lg shadow-[0_0_20px_rgba(0,0,0,0.9)] border border-slate-700/50">
+    <div className="flex items-center gap-2 bg-black p-2 rounded-lg shadow-[0_0_25px_rgba(0,0,0,1)] border-2 border-slate-700">
       <Heart className="text-red-500 animate-pulse" size={20} />
       <div className="flex-1 w-44">
         <div className="flex items-center justify-between mb-1">
