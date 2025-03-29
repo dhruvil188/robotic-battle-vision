@@ -1,6 +1,6 @@
 import p5 from "p5";
 import { toast } from "sonner";
-import { GameState, GameAssets } from "./types";
+import { GameState, GameAssets, BulletType } from "./types";
 import { Player } from "./entities/Player";
 import { Enemy } from "./entities/Enemy";
 import { Bullet } from "./entities/Bullet";
@@ -26,6 +26,10 @@ export class GameEngine {
       bullets: [],
       enemyBullets: [],
       score: 0,
+      enemiesDestroyed: 0,
+      bossActive: false,
+      lastBossSpawn: 0,
+      bossSpawnThreshold: 50, // Boss appears after 50 enemies destroyed
       lastShotTime: 0,
       shootDelay: 300,
       lastEnemySpawnTime: 0,
@@ -53,7 +57,7 @@ export class GameEngine {
     try {
       // Initialize sounds if p5.sound is available
       if (this.p.SoundFile) {
-        this.assets.shootSound = new this.p.SoundFile("data:audio/wav;base64,UklGRpQEAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YXAEAABt7XDtgO2X7bLtzO3o7QHuGe4v7kXuWu5v7oLule6m7rjuyO7X7ufu9e4C7w7vGe8k7y3vNe877z/vQu9E70XvRO9C70HvPO857zPvLO8l7xzvE+8I7//u9O7p7tzu0e7E7rjuq+6d7o/ufu5w7mDuT+4+7izuGu4I7vXt4u3O7brtpu2R7X3taO1T7T7tKe0U7f/s6uzV7MHsrOyX7ILsb+xb7EfsM+wg7A7s/OvL6+3rAewV7CnsP+xV7GvsgeyX7K7sxezc7PPsCu0h7TjtT+1m7X3tle2r7cLt2O3v7Qbu3e0W7k7uh+7B7vru8+4s72XvnO/T7wLwA/AK8ynzXfOX88bztuLwEfE38VzxgfGm8cnx6/EL8irySPJm8oPyoPK78tbyzPG98djx8vEN8ib+NfNA80zzWPNi823zePOC844zmfOj86zzs/O5877zwvPG88jzyvPK88rzyfPI88bzw/PCYMsnyXzJy8kXynDKu8oEy0zLksvZyxrMV8yCzKbMxczdzO3M980HzQ/NFc0Z5M/NJc8zz0DPTc9Zz2TPbs93z3/Phc+Kz47Pkc+Sz5LPkc+Pz4zPiM+Ez3/Pes91z2/PaM9hz1nPUM9Gz0DPXeDHH8k9yVrJdMmOyabJvcnTyenJ/skSyiXKNspGylLKXcpoyoZ3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKPY/Njv2OLo9ej42PvI/qjxmQSJB3kKaQ1JD9KNeQN+BZ4HngmOC24NXg9+Kh4VLhM+EV4fngy+hn4kvCZMp4yozKoMqzysbK2crryv3KD8sgyzLKPMq6ysvK28ogy4nLmcupy7jLx8vWy+TL8sv/yyvJYsyNzLnM5Mpb79/vLvIw8vnyXPNA8+DzfPQZ9bb1VPbI9kH3u/c0+K74Jvmf+Rj6kfp0+3377/yp/WL+Hf/Y/2kAHAG0AYkCSgMNBNMEngVlBi4H9wfCCIwJVwoiC+4LugyGDVQOIg/xD7/QQfD/8Ijy/PJn87nzB/RT9J/06/Q19YD1y/UV9l72p/bw9jn3gffJ9xL4WviT+dX5DPpJ+oH6uvry+ir7YvuZ+9H7CPw//HX8q/zi/Bn9T/2F/bn95/0b/k/+g/63/uv+H/9S/4X/uP/r/x0AUACCALQAGQBbAAEBMgFjAZMBwgHxASACTwJ9AqsCKAKFAusCEAM0A1cDeQOaA7oDVwKXArUCGQMUBFAEpwT9BE8FoQXyBUMGlAbkBjQHgwfTBxcIYAiqCPIIOwmCCcgJDgpTCpcK2wo=");
+        this.assets.shootSound = new this.p.SoundFile("data:audio/wav;base64,UklGRpQEAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YXAEAABt7XDtgO2X7bLtzO3o7QHuGe4v7kXuWu5v7oLule6m7rjuyO7X7ufu9e4C7w7vGe8k7y3vNe877z/vQu9E70XvRO9C70HvPO857zPvLO8l7xzvE+8I7//u9O7p7tzu0e7E7rjuq+6d7o/ufu5w7mDuT+4+7izuGu4I7vXt4u3O7brtpu2R7X3taO1T7T7tKe0U7f/s6uzV7MHsrOyX7ILsb+xb7EfsM+wg7A7s/OvL6+3rAewV7CnsP+xV7GvsgeyX7K7sxezc7PPsCu0h7TjtT+1m7X3tle2r7cLt2O3v7Qbu3e0W7k7uh+7B7vru8+4s72XvnO/T7wLwA/AK8ynzXfOX88bztuLwEfE38VzxgfGm8cnx6/EL8irySPJm8oPyoPK78tbyzPG98djx8vEN8ib+NfNA80zzWPNi823zePOC844zmfOj86zzs/O5877zwvPG88jzyvPK88rzyfPI88bzw/PCYMsnyXzJy8kXynDKu8oEy0zLksvZyxrMV8yCzKbMxczdzO3M980HzQ/NFc0Z5M/NJc8zz0DPTc9Zz2TPbs93z3/Phc+Kz47Pkc+Sz5LPkc+Pz4zPiM+Ez3/Pes91z2/PaM9hz1nPUM9Gz0DPXeDHH8k9yVrJdMmOyabJvcnTyenJ/skSyiXKNspGylLKXcpoyoZ3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKPY/Njv2OLo9ej42PvI/qjxmQSJB3kKaQ1JD9KNeQN+BZ4HngmOC24NXg9+Kh4VLhM+EV4fngy+hn4kvCZMp4yozKoMqzysbK2crryv3KD8sgyzLKPMq6ysvK28ogy4nLmcupy7jLx8vWy+TL8sv/yyvJYsyNzLnM5Mpb79/vLvIw8vnyXPNA8+DzfPQZ9bb1VPbI9kH3u/c0+K74Jvmf+Rj6kfp0+3377/yp/WL+Hf/Y/2kAHAG0AYkCSgMNBNMEngVlBi4H9wfCCIwJVwoiC+4LugyGDVQOIg/xD7/QQfD/8Ijy/PJn87nzB/RT9J/06/Q19YD1y/UV9l72p/bw9jn3gffJ9xL4WviT+dX5DPpJ+oH6uvry+ir7YvuZ+9H7CPw//HX8q/zi/Bn9T/2F/bn95/0b/k/+g/63/uv+H/9S/4X/uP/r/x0AUACCALQAGQBbAAEBMgFjAZMBwgHxASACTwJ9AqsCKAKFAusCEAM0A1cDeQOaA7oDVwKXArUCGQMUBFAEpwT9BE8FoQXyBUMGlAbkBjQHgwfTBxcIYAiqCPIIOwmCCcgJDgpTCpcK2wo=");
         
         if (this.assets.shootSound) {
           this.assets.shootSound.setVolume(0.2);
@@ -168,6 +172,19 @@ export class GameEngine {
   }
   
   spawnEnemies() {
+    // Don't spawn regular enemies if boss is active
+    if (this.state.bossActive) return;
+    
+    // Check if it's time to spawn a boss
+    if (this.state.enemiesDestroyed >= this.state.bossSpawnThreshold && 
+        !this.state.bossActive && 
+        this.p.millis() - this.state.lastBossSpawn > 30000) { // At least 30 seconds between bosses
+      
+      this.spawnBoss();
+      return;
+    }
+    
+    // Regular enemy spawning logic
     if (this.p.millis() - this.state.lastEnemySpawnTime > this.state.enemySpawnInterval) {
       // Determine how many enemies to spawn (1-3 based on score)
       const spawnCount = Math.min(3, Math.floor(this.state.score / 10) + 1);
@@ -181,12 +198,37 @@ export class GameEngine {
           this.p.width - 50
         );
         
+        // Randomly choose enemy type, with higher chance of stronger enemies as score increases
+        let enemyType = 0;
+        const typeRoll = this.p.random();
+        
+        if (this.state.score > 50) {
+          if (typeRoll < 0.3) enemyType = 0; // Basic
+          else if (typeRoll < 0.5) enemyType = 1; // Tanky
+          else if (typeRoll < 0.7) enemyType = 2; // Fast
+          else if (typeRoll < 0.9) enemyType = 3; // Rapid fire
+          else enemyType = 4; // Heavy gunner
+        } else if (this.state.score > 25) {
+          if (typeRoll < 0.4) enemyType = 0; // Basic
+          else if (typeRoll < 0.6) enemyType = 1; // Tanky
+          else if (typeRoll < 0.8) enemyType = 2; // Fast
+          else enemyType = 3; // Rapid fire
+        } else if (this.state.score > 10) {
+          if (typeRoll < 0.6) enemyType = 0; // Basic
+          else if (typeRoll < 0.8) enemyType = 1; // Tanky
+          else enemyType = 2; // Fast
+        } else {
+          if (typeRoll < 0.8) enemyType = 0; // Basic
+          else enemyType = 1; // Tanky
+        }
+        
         const enemy = new Enemy(
           this.p, 
           spawnX, 
           -30 - (i * 30), // Stagger vertical positions
           20, 
-          this.p.random(2, 3.5) // Faster enemies
+          this.p.random(2, 3.5), // Speed
+          enemyType
         );
         this.state.enemies.push(enemy);
       }
@@ -194,9 +236,59 @@ export class GameEngine {
       this.state.lastEnemySpawnTime = this.p.millis();
       
       // Gradually increase difficulty - faster spawn rate
-      if (this.state.enemySpawnInterval > 600) { // Lower minimum interval for more enemies
-        this.state.enemySpawnInterval *= 0.992; // Decrease interval faster
+      if (this.state.enemySpawnInterval > 600) {
+        this.state.enemySpawnInterval *= 0.992;
       }
+    }
+  }
+  
+  spawnBoss() {
+    // Create boss at the top center of the screen
+    const bossX = this.p.width / 2;
+    const bossY = -50;
+    
+    const boss = new Enemy(
+      this.p,
+      bossX,
+      bossY,
+      30, // Larger radius
+      1.5, // Speed
+      undefined, // Random type
+      true // Is boss
+    );
+    
+    this.state.enemies.push(boss);
+    this.state.bossActive = true;
+    this.state.lastBossSpawn = this.p.millis();
+    
+    // Show boss warning
+    toast.error("WARNING: Boss approaching!", {
+      position: "top-center",
+      duration: 3000,
+    });
+    
+    // Play boss warning sound if available
+    if (this.assets.bossWarningSound) {
+      try {
+        this.assets.bossWarningSound.play();
+      } catch (error) {
+        console.log("Error playing boss warning sound:", error);
+      }
+    }
+    
+    // Create warning particles
+    for (let i = 0; i < 30; i++) {
+      const warningParticle = new Particle(
+        this.p,
+        this.p.random(this.p.width),
+        this.p.random(100),
+        this.p.random(-2, 2),
+        this.p.random(-1, 3),
+        this.p.color(255, 50, 50, this.p.random(100, 200)),
+        this.p.random(5, 15),
+        this.p.random(30, 60)
+      );
+      this.state.backgroundParticles.push(warningParticle);
     }
   }
   
@@ -263,12 +355,19 @@ export class GameEngine {
       const shouldShoot = this.state.enemies[i].update();
       
       if (shouldShoot) {
-        const bullet = this.state.enemies[i].shoot();
-        this.state.enemyBullets.push(bullet);
+        const bulletResult = this.state.enemies[i].shoot();
+        
+        // Handle both single bullets and arrays of bullets
+        if (Array.isArray(bulletResult)) {
+          this.state.enemyBullets.push(...bulletResult);
+        } else {
+          this.state.enemyBullets.push(bulletResult);
+        }
       }
       
-      if (this.state.enemies[i].y > this.p.height) {
-        this.state.enemies.splice(i, 1); // Remove enemies that go off-screen
+      // If enemy is not boss and goes off-screen, remove it
+      if (!this.state.enemies[i].isBoss && this.state.enemies[i].y > this.p.height) {
+        this.state.enemies.splice(i, 1);
       }
     }
     
@@ -297,26 +396,95 @@ export class GameEngine {
         );
         
         if (d < this.state.enemies[j].r + 5) {
-          // Create explosion at enemy position
-          let explosion = new Explosion(
-            this.p,
-            this.state.enemies[j].x,
-            this.state.enemies[j].y,
-            this.state.enemies[j].r * 1.5,
-            this.p.color(255, 100, 50, 200)
-          );
-          this.state.explosions.push(explosion);
+          // Apply bullet damage to enemy health
+          this.state.enemies[j].health -= this.state.bullets[i].damage;
           
-          this.state.bullets.splice(i, 1); // Remove bullet
-          this.state.enemies.splice(j, 1); // Remove enemy
-          this.state.score++; // Increase score
+          // Create small hit effect
+          for (let k = 0; k < 5; k++) {
+            let hitParticle = new Particle(
+              this.p,
+              this.state.bullets[i].x,
+              this.state.bullets[i].y,
+              this.p.random(-2, 2),
+              this.p.random(-2, 2),
+              this.p.color(255, this.state.enemies[j].isBoss ? 100 : 200, 100, 200),
+              this.p.random(3, 8),
+              this.p.random(10, 20)
+            );
+            this.state.backgroundParticles.push(hitParticle);
+          }
           
-          // Play sound
-          if (this.assets.enemyHitSound) {
-            try {
-              this.assets.enemyHitSound.play();
-            } catch (error) {
-              console.log("Error playing enemy hit sound:", error);
+          // Remove bullet
+          this.state.bullets.splice(i, 1);
+          
+          // If enemy health <= 0, destroy it
+          if (this.state.enemies[j].health <= 0) {
+            // Create explosion at enemy position
+            let explosion = new Explosion(
+              this.p,
+              this.state.enemies[j].x,
+              this.state.enemies[j].y,
+              this.state.enemies[j].r * (this.state.enemies[j].isBoss ? 3 : 1.5),
+              this.p.color(255, 100, 50, 200)
+            );
+            this.state.explosions.push(explosion);
+            
+            // If it was a boss, create multiple explosions
+            if (this.state.enemies[j].isBoss) {
+              // Create additional explosions around the boss
+              for (let k = 0; k < 5; k++) {
+                let bossExplosion = new Explosion(
+                  this.p,
+                  this.state.enemies[j].x + this.p.random(-50, 50),
+                  this.state.enemies[j].y + this.p.random(-50, 50),
+                  this.p.random(20, 40),
+                  this.p.color(255, this.p.random(50, 150), 30, 200)
+                );
+                this.state.explosions.push(bossExplosion);
+              }
+              
+              // Update boss state
+              this.state.bossActive = false;
+              
+              // Increase score significantly for boss kill
+              this.state.score += 25;
+              
+              // Spawn power-ups from boss
+              for (let k = 0; k < 3; k++) {
+                const powerUp = new PowerUp(
+                  this.p, 
+                  this.state.enemies[j].x + this.p.random(-30, 30), 
+                  this.state.enemies[j].y + this.p.random(-30, 30)
+                );
+                this.state.powerUps.push(powerUp);
+              }
+              
+              // Show boss defeated message
+              toast.success("Boss defeated! +25 score", {
+                position: "top-center",
+                duration: 3000,
+              });
+              
+              // Increase boss spawn threshold for next boss
+              this.state.bossSpawnThreshold += 50;
+            } else {
+              // Regular enemy destroyed
+              this.state.score++; // Increase score
+            }
+            
+            // Increment enemies destroyed counter
+            this.state.enemiesDestroyed++;
+            
+            // Remove enemy
+            this.state.enemies.splice(j, 1);
+            
+            // Play sound
+            if (this.assets.enemyHitSound) {
+              try {
+                this.assets.enemyHitSound.play();
+              } catch (error) {
+                console.log("Error playing enemy hit sound:", error);
+              }
             }
           }
           
@@ -451,15 +619,19 @@ export class GameEngine {
       );
       
       if (d < this.state.player.r + 5) {
+        // Get bullet damage
+        const bulletDamage = this.state.enemyBullets[i].damage || 1;
+        
         this.state.enemyBullets.splice(i, 1); // Remove bullet
         
         // Shield absorbs some damage
         if (this.state.player.shield > 0) {
           // Reduced shield effect
-          this.state.player.shield -= 50;
+          this.state.player.shield -= 50 * bulletDamage;
+          if (this.state.player.shield < 0) this.state.player.shield = 0;
         } else {
-          this.state.player.health -= 10; // Decrease health
-          this.state.hitFlash = 5; // Trigger hit flash effect
+          this.state.player.health -= 10 * bulletDamage; // Decrease health based on bullet damage
+          this.state.hitFlash = 5 * bulletDamage; // Trigger hit flash effect
           
           // Play sound
           if (this.assets.playerHitSound) this.assets.playerHitSound.play();
@@ -634,6 +806,11 @@ export class GameEngine {
     this.p.textSize(28);
     this.p.text(this.state.score, 20, 40);
     
+    // Show enemies destroyed counter
+    this.p.textSize(12);
+    this.p.fill(200, 200, 255);
+    this.p.text(`Enemies: ${this.state.enemiesDestroyed}/${this.state.bossSpawnThreshold}`, 20, 70);
+    
     // Health bar
     this.p.textSize(16);
     this.p.fill(30, 144, 255);
@@ -717,6 +894,15 @@ export class GameEngine {
       this.p.triangle(20 + 3, powerUpY + 4, 20 + 3, powerUpY + 11, 20 + 8, powerUpY + 7.5);
       this.p.triangle(20 + 8, powerUpY + 4, 20 + 8, powerUpY + 11, 20 + 13, powerUpY + 7.5);
       powerUpY += 20;
+    }
+    
+    // Boss warning indicator (if boss is about to spawn)
+    if (this.state.enemiesDestroyed >= this.state.bossSpawnThreshold - 5 && !this.state.bossActive) {
+      const warningPulse = Math.sin(this.p.frameCount * 0.1) * 127 + 128;
+      this.p.fill(255, 50, 50, warningPulse);
+      this.p.textSize(14);
+      this.p.textAlign(this.p.CENTER);
+      this.p.text("BOSS APPROACHING", this.p.width / 2, 30);
     }
     
     this.p.pop();
@@ -803,6 +989,10 @@ export class GameEngine {
     this.state.explosions = [];
     this.state.powerUps = [];
     this.state.score = 0;
+    this.state.enemiesDestroyed = 0;
+    this.state.bossActive = false;
+    this.state.lastBossSpawn = 0;
+    this.state.bossSpawnThreshold = 50;
     this.state.lastShotTime = 0;
     this.state.lastEnemySpawnTime = 0;
     this.state.powerUpLastSpawnTime = 0;

@@ -29,8 +29,13 @@ export interface EnemyType {
   type: number;
   rotationAngle: number;
   pulseValue: number;
+  isBoss?: boolean;
+  maxHealth?: number;
+  fireRate?: number;
+  lastShotTime?: number;
+  pattern?: number;
   update: () => boolean;
-  shoot: () => BulletType;
+  shoot: () => BulletType | BulletType[];
   draw: () => void;
 }
 
@@ -41,6 +46,7 @@ export interface BulletType {
   vy: number;
   age: number;
   isPlayerBullet: boolean;
+  damage?: number;
   update: () => ParticleType | null;
   draw: () => void;
 }
@@ -115,6 +121,7 @@ export interface GameAssets {
   enemyHitSound?: p5.SoundFile;
   playerHitSound?: p5.SoundFile;
   powerUpSound?: p5.SoundFile;
+  bossWarningSound?: p5.SoundFile;
 }
 
 export interface GameState {
@@ -123,6 +130,10 @@ export interface GameState {
   bullets: BulletType[];
   enemyBullets: BulletType[];
   score: number;
+  enemiesDestroyed: number;
+  bossActive: boolean;
+  lastBossSpawn: number;
+  bossSpawnThreshold: number;
   lastShotTime: number;
   shootDelay: number;
   lastEnemySpawnTime: number;
