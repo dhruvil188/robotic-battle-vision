@@ -12,7 +12,7 @@ export interface PlayerType {
   animationFrame: number;
   moveLeft: () => void;
   moveRight: () => void;
-  shoot: () => void;
+  shoot: () => { bullet: BulletType; particles: ParticleType[] };
   draw: () => void;
 }
 
@@ -25,8 +25,8 @@ export interface EnemyType {
   type: number;
   rotationAngle: number;
   pulseValue: number;
-  update: () => void;
-  shoot: () => void;
+  update: () => boolean;
+  shoot: () => BulletType;
   draw: () => void;
 }
 
@@ -37,7 +37,7 @@ export interface BulletType {
   vy: number;
   age: number;
   isPlayerBullet: boolean;
-  update: () => void;
+  update: () => ParticleType | null;
   draw: () => void;
 }
 
@@ -134,4 +134,6 @@ export interface GameState {
   powerUpLastSpawnTime: number;
   powerUpSpawnInterval: number;
   parallaxLayers: ParallaxLayerType[];
+  tripleShot: number;
+  speedBoost: number;
 }

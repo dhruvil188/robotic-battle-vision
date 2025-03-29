@@ -18,7 +18,8 @@ export class PowerUp implements PowerUpType {
     this.r = 15;
     this.speed = 1.5;
     this.rotationAngle = 0;
-    this.type = this.p.floor(this.p.random(3)); // 0: health, 1: shield, 2: rapid fire
+    // 0: health, 1: shield, 2: rapid fire, 3: triple shot, 4: bomb, 5: speed boost
+    this.type = this.p.floor(this.p.random(6)); 
   }
   
   update() {
@@ -41,9 +42,18 @@ export class PowerUp implements PowerUpType {
     } else if (this.type === 1) { // Shield (blue)
       this.p.stroke(30, 144, 255, 150 + Math.sin(this.p.frameCount * 0.1) * 50);
       this.p.fill(30, 120, 200, 100);
-    } else { // Rapid fire (yellow)
+    } else if (this.type === 2) { // Rapid fire (yellow)
       this.p.stroke(255, 220, 0, 150 + Math.sin(this.p.frameCount * 0.1) * 50);
       this.p.fill(220, 180, 0, 100);
+    } else if (this.type === 3) { // Triple shot (purple)
+      this.p.stroke(180, 90, 255, 150 + Math.sin(this.p.frameCount * 0.1) * 50);
+      this.p.fill(140, 60, 190, 100);
+    } else if (this.type === 4) { // Bomb (orange/red)
+      this.p.stroke(255, 100, 30, 150 + Math.sin(this.p.frameCount * 0.1) * 50);
+      this.p.fill(220, 80, 10, 100);
+    } else { // Speed boost (cyan)
+      this.p.stroke(0, 220, 220, 150 + Math.sin(this.p.frameCount * 0.1) * 50);
+      this.p.fill(0, 180, 180, 100);
     }
     
     this.p.ellipse(0, 0, this.r * 2, this.r * 2);
@@ -56,7 +66,7 @@ export class PowerUp implements PowerUpType {
     } else if (this.type === 1) { // Shield - shield shape
       this.p.arc(0, 0, this.r * 1.6, this.r * 1.6, this.p.PI, this.p.TWO_PI);
       this.p.line(-this.r * 0.8, 0, this.r * 0.8, 0);
-    } else { // Rapid fire - lightning bolt
+    } else if (this.type === 2) { // Rapid fire - lightning bolt
       this.p.beginShape();
       this.p.vertex(-3, -8);
       this.p.vertex(2, -2);
@@ -65,6 +75,19 @@ export class PowerUp implements PowerUpType {
       this.p.vertex(0, 2);
       this.p.vertex(3, 0);
       this.p.endShape();
+    } else if (this.type === 3) { // Triple shot - three parallel lines
+      this.p.line(-5, -7, -5, 7);
+      this.p.line(0, -7, 0, 7);
+      this.p.line(5, -7, 5, 7);
+    } else if (this.type === 4) { // Bomb - explosion symbol
+      this.p.ellipse(0, 0, 10, 10);
+      this.p.line(-7, -7, -4, -4);
+      this.p.line(7, -7, 4, -4);
+      this.p.line(-7, 7, -4, 4);
+      this.p.line(7, 7, 4, 4);
+    } else { // Speed boost - fast forward symbol
+      this.p.triangle(-7, -5, -7, 5, 0, 0);
+      this.p.triangle(0, -5, 0, 5, 7, 0);
     }
     
     this.p.pop();

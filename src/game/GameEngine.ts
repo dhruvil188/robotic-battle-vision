@@ -1,4 +1,3 @@
-
 import p5 from "p5";
 import { toast } from "sonner";
 import { GameState, GameAssets } from "./types";
@@ -41,7 +40,9 @@ export class GameEngine {
       powerUps: [],
       powerUpLastSpawnTime: 0,
       powerUpSpawnInterval: 10000,
-      parallaxLayers: []
+      parallaxLayers: [],
+      tripleShot: 0,
+      speedBoost: 0
     };
   }
   
@@ -49,11 +50,17 @@ export class GameEngine {
     // Load font
     this.assets.gameFont = this.p.loadFont('https://fonts.gstatic.com/s/rubik/v28/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-B4i1UA.ttf');
     
-    // Initialize sounds
-    this.assets.shootSound = new this.p.SoundFile("data:audio/wav;base64,UklGRpQEAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YXAEAABt7XDtgO2X7bLtzO3o7QHuGe4v7kXuWu5v7oLule6m7rjuyO7X7ufu9e4C7w7vGe8k7y3vNe877z/vQu9E70XvRO9C70HvPO857zPvLO8l7xzvE+8I7//u9O7p7tzu0e7E7rjuq+6d7o/ufu5w7mDuT+4+7izuGu4I7vXt4u3O7brtpu2R7X3taO1T7T7tKe0U7f/s6uzV7MHsrOyX7ILsb+xb7EfsM+wg7A7s/OvL6+3rAewV7CnsP+xV7GvsgeyX7K7sxezc7PPsCu0h7TjtT+1m7X3tle2r7cLt2O3v7Qbu3e0W7k7uh+7B7vru8+4s72XvnO/T7wLwA/AK8ynzXfOX88bztuLwEfE38VzxgfGm8cnx6/EL8irySPJm8oPyoPK78tbyzPG98djx8vEN8ib+NfNA80zzWPNi823zePOC844zmfOj86zzs/O5877zwvPG88jzyvPK88rzyfPI88bzw/PCYMsnyXzJy8kXynDKu8oEy0zLksvZyxrMV8yCzKbMxczdzO3M980HzQ/NFc0Z5M/NJc8zz0DPTc9Zz2TPbs93z3/Phc+Kz47Pkc+Sz5LPkc+Pz4zPiM+Ez3/Pes91z2/PaM9hz1nPUM9Gz0DPXeDHH8k9yVrJdMmOyabJvcnTyenJ/skSyiXKNspGylLKXcpoyoZ3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKPY/Njv2OLo9ej42PvI/qjxmQSJB3kKaQ1JD9KNeQN+BZ4HngmOC24NXg9+Kh4VLhM+EV4fngy+hn4kvCZMp4yozKoMqzysbK2crryv3KD8sgyzLKPMq6ysvK28ogy4nLmcupy7jLx8vWy+TL8sv/yyvJYsyNzLnM5Mpb79/vLvIw8vnyXPNA8+DzfPQZ9bb1VPbI9kH3u/c0+K74Jvmf+Rj6kfp0+3377/yp/WL+Hf/Y/2kAHAG0AYkCSgMNBNMEngVlBi4H9wfCCIwJVwoiC+4LugyGDVQOIg/xD7/QQfD/8Ijy/PJn87nzB/RT9J/06/Q19YD1y/UV9l72p/bw9jn3gffJ9xL4WviT+dX5DPpJ+oH6uvry+ir7YvuZ+9H7CPw//HX8q/zi/Bn9T/2F/bn95/0b/k/+g/63/uv+H/9S/4X/uP/r/x0AUACCALQAGQBbAAEBMgFjAZMBwgHxASACTwJ9AqsCKAKFAusCEAM0A1cDeQOaA7oDVwKXArUCGQMUBFAEpwT9BE8FoQXyBUMGlAbkBjQHgwfTBxcIYAiqCPIIOwmCCcgJDgpTCpcK2wo=");
-    
-    if (this.assets.shootSound) {
-      this.assets.shootSound.setVolume(0.2);
+    try {
+      // Initialize sounds if p5.sound is available
+      if (this.p.SoundFile) {
+        this.assets.shootSound = new this.p.SoundFile("data:audio/wav;base64,UklGRpQEAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YXAEAABt7XDtgO2X7bLtzO3o7QHuGe4v7kXuWu5v7oLule6m7rjuyO7X7ufu9e4C7w7vGe8k7y3vNe877z/vQu9E70XvRO9C70HvPO857zPvLO8l7xzvE+8I7//u9O7p7tzu0e7E7rjuq+6d7o/ufu5w7mDuT+4+7izuGu4I7vXt4u3O7brtpu2R7X3taO1T7T7tKe0U7f/s6uzV7MHsrOyX7ILsb+xb7EfsM+wg7A7s/OvL6+3rAewV7CnsP+xV7GvsgeyX7K7sxezc7PPsCu0h7TjtT+1m7X3tle2r7cLt2O3v7Qbu3e0W7k7uh+7B7vru8+4s72XvnO/T7wLwA/AK8ynzXfOX88bztuLwEfE38VzxgfGm8cnx6/EL8irySPJm8oPyoPK78tbyzPG98djx8vEN8ib+NfNA80zzWPNi823zePOC844zmfOj86zzs/O5877zwvPG88jzyvPK88rzyfPI88bzw/PCYMsnyXzJy8kXynDKu8oEy0zLksvZyxrMV8yCzKbMxczdzO3M980HzQ/NFc0Z5M/NJc8zz0DPTc9Zz2TPbs93z3/Phc+Kz47Pkc+Sz5LPkc+Pz4zPiM+Ez3/Pes91z2/PaM9hz1nPUM9Gz0DPXeDHH8k9yVrJdMmOyabJvcnTyenJ/skSyiXKNspGylLKXcpoyoZ3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKPY/Njv2OLo9ej42PvI/qjxmQSJB3kKaQ1JD9KNeQN+BZ4HngmOC24NXg9+Kh4VLhM+EV4fngy+hn4kvCZMp4yozKoMqzysbK2crryv3KD8sgyzLKPMq6ysvK28ogy4nLmcupy7jLx8vWy+TL8sv/yyvJYsyNzLnM5Mpb79/vLvIw8vnyXPNA8+DzfPQZ9bb1VPbI9kH3u/c0+K74Jvmf+Rj6kfp0+3377/yp/WL+Hf/Y/2kAHAG0AYkCSgMNBNMEngVlBi4H9wfCCIwJVwoiC+4LugyGDVQOIg/xD7/QQfD/8Ijy/PJn87nzB/RT9J/06/Q19YD1y/UV9l72p/bw9jn3gffJ9xL4WviT+dX5DPpJ+oH6uvry+ir7YvuZ+9H7CPw//HX8q/zi/Bn9T/2F/bn95/0b/k/+g/63/uv+H/9S/4X/uP/r/x0AUACCALQAGQBbAAEBMgFjAZMBwgHxASACTwJ9AqsCKAKFAusCEAM0A1cDeQOaA7oDVwKXArUCGQMUBFAEpwT9BE8FoQXyBUMGlAbkBjQHgwfTBxcIYAiqCPIIOwmCCcgJDgpTCpcK2wo=");
+        
+        if (this.assets.shootSound) {
+          this.assets.shootSound.setVolume(0.2);
+        }
+      }
+    } catch (error) {
+      console.log("Sound not supported:", error);
     }
   }
   
@@ -79,23 +86,68 @@ export class GameEngine {
   }
   
   handleInput() {
-    // Player movement
+    // Player movement with speed boost consideration
+    const moveSpeed = this.state.speedBoost > 0 ? this.state.player.speed * 1.5 : this.state.player.speed;
+    
     if (this.p.keyIsDown(37)) { // Left arrow
-      this.state.player.moveLeft();
+      this.state.player.x -= moveSpeed;
+      if (this.state.player.x - this.state.player.w / 2 < 0) {
+        this.state.player.x = this.state.player.w / 2;
+      }
     }
     if (this.p.keyIsDown(39)) { // Right arrow
-      this.state.player.moveRight();
+      this.state.player.x += moveSpeed;
+      if (this.state.player.x + this.state.player.w / 2 > this.p.width) {
+        this.state.player.x = this.p.width - this.state.player.w / 2;
+      }
     }
 
     // Player shooting with cooldown
     if (this.p.keyIsDown(32) && this.p.millis() - this.state.lastShotTime > this.state.shootDelay) { // 32 is spacebar
-      const { bullet, particles } = this.state.player.shoot();
-      this.state.bullets.push(bullet);
-      this.state.backgroundParticles.push(...particles);
+      // Handle different shot types
+      if (this.state.tripleShot > 0) {
+        // Triple shot
+        const mainShot = this.state.player.shoot();
+        this.state.bullets.push(mainShot.bullet);
+        this.state.backgroundParticles.push(...mainShot.particles);
+        
+        // Create side bullets
+        const leftBullet = new Bullet(
+          this.p, 
+          this.state.player.x - 15, 
+          this.state.player.y - this.state.player.h / 2, 
+          -2, 
+          -11, 
+          true
+        );
+        
+        const rightBullet = new Bullet(
+          this.p, 
+          this.state.player.x + 15, 
+          this.state.player.y - this.state.player.h / 2, 
+          2, 
+          -11,
+          true
+        );
+        
+        this.state.bullets.push(leftBullet, rightBullet);
+      } else {
+        // Normal shot
+        const result = this.state.player.shoot();
+        this.state.bullets.push(result.bullet);
+        this.state.backgroundParticles.push(...result.particles);
+      }
+      
       this.state.lastShotTime = this.p.millis();
       
       // Play shoot sound
-      if (this.assets.shootSound) this.assets.shootSound.play();
+      if (this.assets.shootSound) {
+        try {
+          this.assets.shootSound.play();
+        } catch (error) {
+          console.log("Error playing sound:", error);
+        }
+      }
     }
   }
   
@@ -191,6 +243,10 @@ export class GameEngine {
         this.state.powerUps.splice(i, 1); // Remove power-ups that go off-screen
       }
     }
+    
+    // Update power-up timers
+    if (this.state.tripleShot > 0) this.state.tripleShot--;
+    if (this.state.speedBoost > 0) this.state.speedBoost--;
   }
   
   checkCollisions() {
@@ -220,7 +276,13 @@ export class GameEngine {
           this.state.score++; // Increase score
           
           // Play sound
-          if (this.assets.enemyHitSound) this.assets.enemyHitSound.play();
+          if (this.assets.enemyHitSound) {
+            try {
+              this.assets.enemyHitSound.play();
+            } catch (error) {
+              console.log("Error playing enemy hit sound:", error);
+            }
+          }
           
           break; // Exit inner loop after hit
         }
@@ -237,7 +299,7 @@ export class GameEngine {
       );
       
       if (d < this.state.player.r + this.state.powerUps[i].r) {
-        // Apply power-up effect
+        // Apply power-up effect based on type
         if (this.state.powerUps[i].type === 0) { // Health
           this.state.player.health = Math.min(100, this.state.player.health + 20);
           toast.success("Health restored!", {
@@ -250,12 +312,58 @@ export class GameEngine {
             position: "bottom-center",
             duration: 1500,
           });
-        } else { // Rapid fire
+        } else if (this.state.powerUps[i].type === 2) { // Rapid fire
           this.state.shootDelay = 150; // Temporarily reduce cooldown
           setTimeout(() => {
             this.state.shootDelay = 300; // Reset after 5 seconds
           }, 5000);
           toast.info("Rapid fire activated!", {
+            position: "bottom-center",
+            duration: 1500,
+          });
+        } else if (this.state.powerUps[i].type === 3) { // Triple shot
+          this.state.tripleShot = 300; // Triple shot duration (frames)
+          toast.info("Triple shot activated!", {
+            position: "bottom-center",
+            duration: 1500,
+          });
+        } else if (this.state.powerUps[i].type === 4) { // Bomb
+          // Create a large explosion that destroys all enemies on screen
+          let explosion = new Explosion(
+            this.p,
+            this.state.player.x,
+            this.state.player.y - 100,
+            150,
+            this.p.color(255, 100, 30, 200)
+          );
+          this.state.explosions.push(explosion);
+          
+          // Remove all enemies
+          for (let enemy of this.state.enemies) {
+            this.state.score++; // Increase score for each enemy destroyed
+            
+            // Create smaller explosions at each enemy position
+            let enemyExplosion = new Explosion(
+              this.p,
+              enemy.x,
+              enemy.y,
+              enemy.r * 2,
+              this.p.color(255, 100, 50, 200)
+            );
+            this.state.explosions.push(enemyExplosion);
+          }
+          
+          // Clear all enemy bullets
+          this.state.enemyBullets = [];
+          this.state.enemies = [];
+          
+          toast.info("Bomb detonated! All enemies destroyed!", {
+            position: "bottom-center",
+            duration: 2000,
+          });
+        } else if (this.state.powerUps[i].type === 5) { // Speed boost
+          this.state.speedBoost = 300; // Speed boost duration (frames)
+          toast.info("Speed boost activated!", {
             position: "bottom-center",
             duration: 1500,
           });
@@ -266,7 +374,10 @@ export class GameEngine {
           let color;
           if (this.state.powerUps[i].type === 0) color = this.p.color(0, 255, 100, 200);
           else if (this.state.powerUps[i].type === 1) color = this.p.color(30, 144, 255, 200);
-          else color = this.p.color(255, 220, 0, 200);
+          else if (this.state.powerUps[i].type === 2) color = this.p.color(255, 220, 0, 200);
+          else if (this.state.powerUps[i].type === 3) color = this.p.color(180, 90, 255, 200);
+          else if (this.state.powerUps[i].type === 4) color = this.p.color(255, 100, 30, 200);
+          else color = this.p.color(0, 220, 220, 200);
           
           let particle = new Particle(
             this.p,
@@ -282,7 +393,13 @@ export class GameEngine {
         }
         
         // Play sound
-        if (this.assets.powerUpSound) this.assets.powerUpSound.play();
+        if (this.assets.powerUpSound) {
+          try {
+            this.assets.powerUpSound.play();
+          } catch (error) {
+            console.log("Error playing power-up sound:", error);
+          }
+        }
         
         this.state.powerUps.splice(i, 1); // Remove power-up
       }
@@ -300,7 +417,7 @@ export class GameEngine {
       if (d < this.state.player.r + 5) {
         this.state.enemyBullets.splice(i, 1); // Remove bullet
         
-        // Shield absorbs damage
+        // Shield absorbs some damage
         if (this.state.player.shield > 0) {
           // Reduced shield effect
           this.state.player.shield -= 50;
@@ -523,6 +640,44 @@ export class GameEngine {
       this.p.rect(100, 65, shieldWidth, 8, 4);
     }
     
+    // Active power-ups indicators
+    let powerUpY = 80;
+    
+    // Rapid fire indicator
+    if (this.state.shootDelay < 300) {
+      this.p.fill(255, 220, 0, 150);
+      this.p.rect(20, powerUpY, 15, 15, 3);
+      this.p.stroke(255, 220, 0);
+      this.p.strokeWeight(2);
+      this.p.noFill();
+      this.drawLightningIcon(20 + 7.5, powerUpY + 7.5, 5);
+      powerUpY += 20;
+    }
+    
+    // Triple shot indicator
+    if (this.state.tripleShot > 0) {
+      this.p.fill(180, 90, 255, 150);
+      this.p.rect(20, powerUpY, 15, 15, 3);
+      this.p.stroke(180, 90, 255);
+      this.p.strokeWeight(2);
+      this.p.line(20 + 3, powerUpY + 4, 20 + 3, powerUpY + 11);
+      this.p.line(20 + 7.5, powerUpY + 4, 20 + 7.5, powerUpY + 11);
+      this.p.line(20 + 12, powerUpY + 4, 20 + 12, powerUpY + 11);
+      powerUpY += 20;
+    }
+    
+    // Speed boost indicator
+    if (this.state.speedBoost > 0) {
+      this.p.fill(0, 220, 220, 150);
+      this.p.rect(20, powerUpY, 15, 15, 3);
+      this.p.stroke(0, 220, 220);
+      this.p.strokeWeight(2);
+      this.p.noFill();
+      this.p.triangle(20 + 3, powerUpY + 4, 20 + 3, powerUpY + 11, 20 + 8, powerUpY + 7.5);
+      this.p.triangle(20 + 8, powerUpY + 4, 20 + 8, powerUpY + 11, 20 + 13, powerUpY + 7.5);
+      powerUpY += 20;
+    }
+    
     this.p.pop();
     
     // Draw hit flash effect
@@ -611,6 +766,9 @@ export class GameEngine {
     this.state.powerUpLastSpawnTime = 0;
     this.state.hitFlash = 0;
     this.state.gameOver = false;
+    this.state.tripleShot = 0;
+    this.state.speedBoost = 0;
+    this.state.shootDelay = 300;
   }
   
   update() {
@@ -642,16 +800,63 @@ export class GameEngine {
   keyReleased(keyCode: number) {
     if (keyCode === 32) { // Spacebar
       if (this.state.gameStarted && !this.state.gameOver && this.p.millis() - this.state.lastShotTime > this.state.shootDelay) {
-        const { bullet, particles } = this.state.player.shoot();
-        this.state.bullets.push(bullet);
-        this.state.backgroundParticles.push(...particles);
+        if (this.state.tripleShot > 0) {
+          // Triple shot
+          const mainShot = this.state.player.shoot();
+          this.state.bullets.push(mainShot.bullet);
+          this.state.backgroundParticles.push(...mainShot.particles);
+          
+          // Create side bullets
+          const leftBullet = new Bullet(
+            this.p, 
+            this.state.player.x - 15, 
+            this.state.player.y - this.state.player.h / 2, 
+            -2, 
+            -11, 
+            true
+          );
+          
+          const rightBullet = new Bullet(
+            this.p, 
+            this.state.player.x + 15, 
+            this.state.player.y - this.state.player.h / 2, 
+            2, 
+            -11,
+            true
+          );
+          
+          this.state.bullets.push(leftBullet, rightBullet);
+        } else {
+          // Normal shot
+          const result = this.state.player.shoot();
+          this.state.bullets.push(result.bullet);
+          this.state.backgroundParticles.push(...result.particles);
+        }
+        
         this.state.lastShotTime = this.p.millis();
         
         // Play shoot sound
-        if (this.assets.shootSound) this.assets.shootSound.play();
+        if (this.assets.shootSound) {
+          try {
+            this.assets.shootSound.play();
+          } catch (error) {
+            console.log("Error playing sound:", error);
+          }
+        }
       }
       return false; // Prevent default
     }
     return true;
+  }
+  
+  drawLightningIcon(x, y, size) {
+    this.p.beginShape();
+    this.p.vertex(x - size/2, y - size);
+    this.p.vertex(x + size/4, y - size/4);
+    this.p.vertex(x - size/4, y);
+    this.p.vertex(x + size/2, y + size);
+    this.p.vertex(x, y + size/4);
+    this.p.vertex(x + size/4, y);
+    this.p.endShape();
   }
 }
