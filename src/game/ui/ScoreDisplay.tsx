@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Award, ShoppingCart, Coins } from "lucide-react";
+import { Award, Coins } from "lucide-react";
 
 interface ScoreDisplayProps {
   score: number;
@@ -11,7 +11,7 @@ interface ScoreDisplayProps {
 const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, gold, onShopOpen }) => {
   return (
     <div className="flex gap-3">
-      <div className="flex items-center gap-2 bg-black/60 p-2 px-3 rounded-lg backdrop-blur-sm shadow-lg border border-slate-700/50">
+      <div className="flex items-center gap-2 bg-black/80 p-2 px-3 rounded-lg shadow-[0_0_15px_rgba(0,0,0,0.8)] border border-slate-700/50">
         <Award className="text-blue-400" size={18} />
         <div>
           <div className="text-xs text-slate-400 uppercase">Score</div>
@@ -22,7 +22,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, gold, onShopOpen }) 
       </div>
       
       <div 
-        className="flex items-center gap-2 bg-black/60 p-2 px-3 rounded-lg backdrop-blur-sm shadow-lg border border-slate-700/50 cursor-pointer hover:bg-slate-900/70 transition-colors"
+        className="flex items-center gap-2 bg-black/80 p-2 px-3 rounded-lg shadow-[0_0_15px_rgba(0,0,0,0.8)] border border-slate-700/50 cursor-pointer hover:bg-slate-900/90 transition-colors"
         onClick={onShopOpen}
       >
         <Coins className="text-yellow-400" size={18} />

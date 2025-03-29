@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import p5 from "p5";
@@ -127,7 +128,7 @@ const Index = () => {
         
         {/* Game UI Overlay */}
         {gameStarted && !gameOver && (
-          <div className="absolute top-0 left-0 w-full p-4 pointer-events-none">
+          <div className="absolute top-0 left-0 w-full p-4 pointer-events-none z-10">
             <div className="flex flex-col justify-between h-[calc(100vh-2rem)] max-w-7xl mx-auto">
               {/* Top row with health, score and gold */}
               <div className="flex justify-between items-start">

@@ -21,7 +21,7 @@ const WeaponIndicator: React.FC<WeaponIndicatorProps> = ({ currentWeapon, weapon
   };
 
   return (
-    <div className="bg-black/60 p-2 px-3 rounded-lg backdrop-blur-sm shadow-lg border border-slate-700/50">
+    <div className="bg-black/80 p-2 px-3 rounded-lg shadow-[0_0_15px_rgba(0,0,0,0.8)] border border-slate-700/50">
       <div className="flex items-center gap-2 mb-1">
         {getWeaponIcon(currentWeapon)}
         <div>

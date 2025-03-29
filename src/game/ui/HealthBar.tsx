@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Shield, Heart } from "lucide-react";
+import { Heart } from "lucide-react";
 
 interface HealthBarProps {
   health: number;
@@ -19,7 +19,7 @@ const HealthBar: React.FC<HealthBarProps> = ({ health, maxHealth }) => {
   };
 
   return (
-    <div className="flex items-center gap-2 bg-black/60 p-2 rounded-lg backdrop-blur-sm shadow-lg border border-slate-700/50">
+    <div className="flex items-center gap-2 bg-black/80 p-2 rounded-lg shadow-[0_0_15px_rgba(0,0,0,0.8)] border border-slate-700/50">
       <Heart className="text-red-500 animate-pulse" size={20} />
       <div className="flex-1 w-44">
         <div className="flex items-center justify-between mb-1">
