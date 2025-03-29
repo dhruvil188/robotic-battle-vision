@@ -140,14 +140,6 @@ export interface VisualEffects {
     centerX: number;
     centerY: number;
   };
-  scorePopups: {
-    value: number;
-    x: number;
-    y: number;
-    color: p5.Color;
-    life: number;
-    scale: number;
-  }[];
 }
 
 export interface GameState {
