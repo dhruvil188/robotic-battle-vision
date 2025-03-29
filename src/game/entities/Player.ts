@@ -45,7 +45,7 @@ export class Player implements PlayerType {
 
   shoot() {
     if (this.currentWeapon === 0) {
-      // Standard single bullet
+      // Standard single bullet - simple but reliable
       const bullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -12, true);
       bullet.damage = 10;
       
@@ -66,25 +66,29 @@ export class Player implements PlayerType {
       
       return { bullet, particles };
     } else if (this.currentWeapon === 1) {
-      // Shotgun - 3-way spread
-      const centerBullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -10, true);
-      const leftBullet = new Bullet(this.p, this.x - 5, this.y - this.h / 2, -2, -9, true);
-      const rightBullet = new Bullet(this.p, this.x + 5, this.y - this.h / 2, 2, -9, true);
+      // Shotgun - improved spread pattern with more bullets
+      const centerBullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -11, true);
+      const leftBullet1 = new Bullet(this.p, this.x - 5, this.y - this.h / 2, -2, -9, true);
+      const rightBullet1 = new Bullet(this.p, this.x + 5, this.y - this.h / 2, 2, -9, true);
+      const leftBullet2 = new Bullet(this.p, this.x - 10, this.y - this.h / 2, -3.5, -7, true);
+      const rightBullet2 = new Bullet(this.p, this.x + 10, this.y - this.h / 2, 3.5, -7, true);
       
-      // Set damage
-      centerBullet.damage = 8;
-      leftBullet.damage = 8;
-      rightBullet.damage = 8;
+      // Set damage - each bullet does less damage individually, but combined they're powerful
+      centerBullet.damage = 7;
+      leftBullet1.damage = 6;
+      rightBullet1.damage = 6;
+      leftBullet2.damage = 5;
+      rightBullet2.damage = 5;
       
       // Create particles for shotgun blast
       const particles = [];
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 15; i++) {
         particles.push(new Particle(
           this.p,
-          this.x + this.p.random(-10, 10), 
+          this.x + this.p.random(-15, 15), 
           this.y - this.h / 2, 
-          this.p.random(-2, 2), 
-          this.p.random(-4, -1),
+          this.p.random(-3, 3), 
+          this.p.random(-5, -1),
           this.p.color(255, 200, 100, 200),
           this.p.random(4, 8),
           this.p.random(8, 15)
@@ -93,47 +97,94 @@ export class Player implements PlayerType {
       
       return { 
         bullet: centerBullet, 
-        extraBullets: [leftBullet, rightBullet],
+        extraBullets: [leftBullet1, rightBullet1, leftBullet2, rightBullet2],
         particles 
       };
     } else if (this.currentWeapon === 2) {
-      // Laser - fast piercing beam
-      const bullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -18, true);
-      bullet.damage = 15;
+      // Laser - much more powerful, piercing beam with higher damage
+      const bullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -25, true);
+      bullet.damage = 25; // Significant damage increase
       
-      // Create laser beam particles
+      // Create laser beam particles - more intense
       const particles = [];
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 20; i++) {
+        const distance = i * 7;
         particles.push(new Particle(
           this.p,
           this.x + this.p.random(-2, 2), 
-          this.y - this.h / 2 - i * 5, 
+          this.y - this.h / 2 - distance, 
           this.p.random(-0.5, 0.5), 
-          this.p.random(-5, -2),
-          this.p.color(255, 0, 128, 200),
-          this.p.random(2, 5),
-          this.p.random(5, 15)
+          this.p.random(-8, -4),
+          this.p.color(255, 0, 128, this.p.random(150, 250)),
+          this.p.random(3, 8),
+          this.p.random(10, 20)
         ));
+        
+        // Add side particles for a more impressive beam
+        if (i % 3 === 0) {
+          particles.push(new Particle(
+            this.p,
+            this.x + this.p.random(-8, 8), 
+            this.y - this.h / 2 - distance, 
+            this.p.random(-2, 2), 
+            this.p.random(-3, -1),
+            this.p.color(255, 100, 200, 150),
+            this.p.random(2, 4),
+            this.p.random(5, 15)
+          ));
+        }
       }
       
       return { bullet, particles };
     } else if (this.currentWeapon === 3) {
-      // Plasma - Large, powerful shot
-      const bullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -8, true);
-      bullet.damage = 30;
+      // Plasma - Extremely powerful but slower, massive splash damage
+      const bullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -6, true); // Slower but devastating
+      bullet.damage = 50; // Massive damage
       
-      // Create plasma particles
+      // Create plasma particles - more impressive and energetic
       const particles = [];
-      for (let i = 0; i < 15; i++) {
+      
+      // Outer energy ring
+      for (let i = 0; i < 24; i++) {
+        const angle = (i / 24) * this.p.TWO_PI;
+        const radius = 12;
         particles.push(new Particle(
           this.p,
-          this.x + this.p.random(-8, 8), 
-          this.y - this.h / 2, 
-          this.p.random(-2, 2), 
-          this.p.random(-3, -1),
-          this.p.color(0, 255, 200, 200),
+          this.x + Math.cos(angle) * radius, 
+          this.y - this.h / 2 + Math.sin(angle) * radius, 
+          Math.cos(angle) * this.p.random(0.5, 1.5), 
+          Math.sin(angle) * this.p.random(0.5, 1.5) - 2,
+          this.p.color(0, 255, 200, this.p.random(150, 250)),
           this.p.random(6, 12),
-          this.p.random(12, 24)
+          this.p.random(15, 30)
+        ));
+      }
+      
+      // Core particles
+      for (let i = 0; i < 10; i++) {
+        particles.push(new Particle(
+          this.p,
+          this.x + this.p.random(-5, 5), 
+          this.y - this.h / 2, 
+          this.p.random(-1, 1), 
+          this.p.random(-3, -1),
+          this.p.color(100, 255, 230, 255),
+          this.p.random(8, 15),
+          this.p.random(20, 35)
+        ));
+      }
+      
+      // Trail particles
+      for (let i = 0; i < 8; i++) {
+        particles.push(new Particle(
+          this.p,
+          this.x + this.p.random(-3, 3), 
+          this.y - this.h / 2 + this.p.random(0, 10), 
+          this.p.random(-0.5, 0.5), 
+          this.p.random(-0.5, 1),
+          this.p.color(0, 200, 180, 150),
+          this.p.random(5, 10),
+          this.p.random(15, 25)
         ));
       }
       
