@@ -1,4 +1,3 @@
-
 import p5 from "p5";
 import { EnemyType } from "../types";
 import { Bullet } from "./Bullet";
@@ -36,7 +35,7 @@ export class Enemy implements EnemyType {
   }
 
   shoot() {
-    return new Bullet(this.p, this.x, this.y + this.r, 0, 6);
+    return new Bullet(this.p, this.x, this.y + this.r, 0, 6, false);
   }
 
   draw() {

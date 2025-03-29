@@ -1,4 +1,6 @@
 
+import p5 from "p5";
+
 export interface PlayerType {
   x: number;
   y: number;

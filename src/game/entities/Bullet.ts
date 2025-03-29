@@ -12,14 +12,14 @@ export class Bullet implements BulletType {
   isPlayerBullet: boolean;
   private p: p5;
 
-  constructor(p: p5, x: number, y: number, vx: number, vy: number) {
+  constructor(p: p5, x: number, y: number, vx: number, vy: number, isPlayerBullet: boolean = true) {
     this.p = p;
     this.x = x;
     this.y = y;
     this.vx = vx;
     this.vy = vy;
     this.age = 0;
-    this.isPlayerBullet = vy < 0;
+    this.isPlayerBullet = isPlayerBullet;
   }
 
   update() {

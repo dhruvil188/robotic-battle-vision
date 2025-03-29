@@ -42,7 +42,7 @@ export class Player implements PlayerType {
   }
 
   shoot() {
-    const bullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -12);
+    const bullet = new Bullet(this.p, this.x, this.y - this.h / 2, 0, -12, true);
     
     // Return the bullet and particles for the game engine to handle
     const particles = [];
