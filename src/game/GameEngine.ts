@@ -12,7 +12,7 @@ import { ParallaxLayer } from "./entities/ParallaxLayer";
 
 export class GameEngine {
   private p: p5;
-  private state: GameState;
+  public state: GameState;
   private assets: GameAssets;
   
   constructor(p: p5) {
