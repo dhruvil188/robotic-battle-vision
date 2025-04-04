@@ -101,7 +101,7 @@ const Index = () => {
     maxHealth, 
     score, 
     gold, 
-    enemiesDestroyed,
+    zombiesKilled,
     bossesDefeated,
     shopOpen,
     shopItems,
@@ -173,7 +173,7 @@ const Index = () => {
         {gameOver && (
           <GameOverScreen 
             score={score}
-            enemiesDestroyed={enemiesDestroyed}
+            zombiesKilled={zombiesKilled}
             bossesDefeated={bossesDefeated}
             onRestart={handleRestartGame}
           />

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Gun, Info, Settings } from 'lucide-react';
+import { Target, Info, Settings } from 'lucide-react';
 
 interface GameStartScreenProps {
   onStart: () => void;
@@ -68,7 +68,7 @@ const GameStartScreen: React.FC<GameStartScreenProps> = ({ onStart }) => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          <Gun className="text-white" size={20} />
+          <Target className="text-white" size={20} />
           <span className="text-xl">START GAME</span>
         </motion.button>
         

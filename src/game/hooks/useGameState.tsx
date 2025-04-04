@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { GameEngine } from '../GameEngine';
 import { toast } from "@/hooks/use-toast";
@@ -9,6 +8,7 @@ export interface GameState {
   score: number;
   gold: number;
   zombiesKilled: number;
+  enemiesDestroyed: number;
   bossesDefeated: number;
   baseHealth: number;
   maxBaseHealth: number;
@@ -31,6 +31,7 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
     score: 0,
     gold: 0,
     zombiesKilled: 0,
+    enemiesDestroyed: 0,
     bossesDefeated: 0,
     baseHealth: 100,
     maxBaseHealth: 100,
@@ -76,6 +77,7 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
         score: engine.state.score,
         gold: engine.state.gold,
         zombiesKilled: engine.state.zombiesKilled,
+        enemiesDestroyed: engine.state.zombiesKilled,
         bossesDefeated: engine.state.bossesDefeated,
         baseHealth: engine.state.baseHealth,
         maxBaseHealth: engine.state.maxBaseHealth,

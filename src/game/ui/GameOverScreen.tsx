@@ -6,6 +6,7 @@ import { RotateCcw, Skull } from 'lucide-react';
 interface GameOverScreenProps {
   score: number;
   zombiesKilled: number;
+  enemiesDestroyed?: number; // Add as optional for backward compatibility
   bossesDefeated: number;
   onRestart: () => void;
 }
@@ -13,9 +14,13 @@ interface GameOverScreenProps {
 const GameOverScreen: React.FC<GameOverScreenProps> = ({
   score,
   zombiesKilled,
+  enemiesDestroyed, // Can accept this prop too now
   bossesDefeated,
   onRestart,
 }) => {
+  // Use enemiesDestroyed if provided, otherwise fall back to zombiesKilled
+  const totalZombiesKilled = enemiesDestroyed !== undefined ? enemiesDestroyed : zombiesKilled;
+
   return (
     <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-50">
       <motion.div 
@@ -67,7 +72,7 @@ const GameOverScreen: React.FC<GameOverScreenProps> = ({
             
             <div className="flex justify-between items-center border-b border-gray-700 pb-2 mb-2">
               <span className="text-gray-400">Zombies Killed</span>
-              <span className="text-xl font-semibold text-green-500">{zombiesKilled}</span>
+              <span className="text-xl font-semibold text-green-500">{totalZombiesKilled}</span>
             </div>
             
             <div className="flex justify-between items-center">
