@@ -8,21 +8,6 @@ interface GameStartScreenProps {
 }
 
 const GameStartScreen: React.FC<GameStartScreenProps> = ({ onStart }) => {
-  // Handle keyboard input directly in the component
-  React.useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        onStart();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    
-    return () => {
-      window.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [onStart]);
-
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50">
       <motion.div 

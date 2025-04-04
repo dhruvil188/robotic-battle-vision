@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { GameEngine } from '../GameEngine';
 import { showWeaponChangeToast, showWeaponUpgradeToast, showEnemyDefeatedToast } from '../utils/toastManager';
-import { toast } from "@/hooks/use-toast";
 
 export interface GameState {
   playerHealth: number;
@@ -118,27 +117,6 @@ export const useGameState = (gameEngineRef: React.MutableRefObject<GameEngine | 
   const handleStartGame = () => {
     if (gameEngineRef.current) {
       gameEngineRef.current.state.gameStarted = true;
-      
-      // Add a small delay to ensure game engine is ready
-      setTimeout(() => {
-        // Ensure game is properly started
-        if (gameEngineRef.current) {
-          gameEngineRef.current.state.gameStarted = true;
-          
-          // Initialize game state if needed
-          if (!gameEngineRef.current.state.player) {
-            console.log("Initializing player");
-            gameEngineRef.current.resetGame();
-          }
-        }
-      }, 100);
-      
-      // Show a toast notification
-      toast({
-        title: "Game Started!",
-        description: "Use arrow keys to move and SPACE to shoot",
-        duration: 3000,
-      });
     }
   };
   

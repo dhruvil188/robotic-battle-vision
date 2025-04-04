@@ -59,43 +59,15 @@ const Index = () => {
         p.keyReleased = () => {
           return gameEngine.keyReleased(p.keyCode);
         };
-
-        // Add keyPressed event handler to make controls more responsive
-        p.keyPressed = () => {
-          // Check for Enter key to start game
-          if (p.keyCode === p.ENTER && !gameState.gameStarted) {
-            handleStartGame();
-            return false; // Prevent default behavior
-          }
-          
-          // Pass other key events to the game engine if game is started
-          if (gameState.gameStarted && !gameState.gameOver) {
-            // Handle key press directly here since GameEngine doesn't have keyPressed method
-            return true; // Allow default behavior for game keys
-          }
-          
-          return true; // Allow default behavior for other keys
-        };
       };
       
       myP5 = new p5(sketch, p5ContainerRef.current);
     }
     
-    // Handle keyboard events for the game
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && !gameState.gameStarted) {
-        handleStartGame();
-        e.preventDefault();
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    
     return () => {
       myP5?.remove();
-      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [updateGameState, gameState.gameStarted, gameState.gameOver, handleStartGame]);
+  }, [updateGameState]);
 
   const { 
     playerHealth, 
