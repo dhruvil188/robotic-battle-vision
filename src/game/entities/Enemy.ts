@@ -1,7 +1,14 @@
+
 import p5 from "p5";
 import { EnemyType, BulletType } from "../types";
-import { Bullet } from "./Bullet";
+import { BasicEnemy } from "./enemies/BasicEnemy";
+import { TankyEnemy } from "./enemies/TankyEnemy";
+import { FastEnemy } from "./enemies/FastEnemy";
+import { RapidFireEnemy } from "./enemies/RapidFireEnemy";
+import { HeavyGunnerEnemy } from "./enemies/HeavyGunnerEnemy";
+import { BossEnemy } from "./enemies/BossEnemy";
 
+// Factory class to create different enemy types
 export class Enemy implements EnemyType {
   x: number;
   y: number;
@@ -17,336 +24,73 @@ export class Enemy implements EnemyType {
   lastShotTime: number;
   pattern: number;
   private p: p5;
+  private enemy: EnemyType;
 
   constructor(p: p5, x: number, y: number, r: number, speed: number, type?: number, isBoss: boolean = false) {
     this.p = p;
-    this.x = x;
-    this.y = y;
-    this.r = r;
-    this.speed = speed;
     
     // Determine enemy type if not specified
-    this.type = type !== undefined ? type : this.p.floor(this.p.random(5)); // More enemy types (0-4)
+    const enemyType = type !== undefined ? type : p.floor(p.random(5));
     
-    // Set properties based on enemy type
-    this.isBoss = isBoss;
-    
-    if (this.isBoss) {
-      // Boss properties
-      this.health = 100;
-      this.maxHealth = 100;
-      this.fireRate = 800; // ms between shots
-      this.pattern = this.p.floor(this.p.random(3)); // Different attack patterns
-      this.speed = 0.5; // Slower movement
+    // Create the appropriate enemy type
+    if (isBoss) {
+      this.enemy = new BossEnemy(p, x, y, r, speed);
     } else {
-      // Regular enemy properties based on type
-      switch(this.type) {
-        case 0: // Basic enemy (original)
-          this.health = 1;
-          this.fireRate = 2000;
+      switch(enemyType) {
+        case 0:
+          this.enemy = new BasicEnemy(p, x, y, r, speed);
           break;
-        case 1: // Tanky enemy
-          this.health = 3;
-          this.fireRate = 2500;
+        case 1:
+          this.enemy = new TankyEnemy(p, x, y, r, speed);
           break;
-        case 2: // Fast enemy
-          this.health = 1;
-          this.speed *= 1.5;
-          this.fireRate = 2200;
+        case 2:
+          this.enemy = new FastEnemy(p, x, y, r, speed);
           break;
-        case 3: // Rapid fire enemy
-          this.health = 1;
-          this.fireRate = 1500;
+        case 3:
+          this.enemy = new RapidFireEnemy(p, x, y, r, speed);
           break;
-        case 4: // Heavy gunner
-          this.health = 2;
-          this.fireRate = 3000;
+        case 4:
+          this.enemy = new HeavyGunnerEnemy(p, x, y, r, speed);
           break;
         default:
-          this.health = 1;
-          this.fireRate = 2000;
+          this.enemy = new BasicEnemy(p, x, y, r, speed);
       }
-      this.maxHealth = this.health;
     }
     
-    this.rotationAngle = 0;
-    this.pulseValue = 0;
-    this.lastShotTime = p.millis();
+    // Set required properties for EnemyType interface
+    this.x = this.enemy.x;
+    this.y = this.enemy.y;
+    this.r = this.enemy.r;
+    this.speed = this.enemy.speed;
+    this.health = this.enemy.health;
+    this.type = this.enemy.type;
+    this.rotationAngle = this.enemy.rotationAngle;
+    this.pulseValue = this.enemy.pulseValue;
+    this.isBoss = this.enemy.isBoss;
+    this.maxHealth = this.enemy.maxHealth;
+    this.fireRate = this.enemy.fireRate;
+    this.lastShotTime = this.enemy.lastShotTime;
+    this.pattern = this.enemy.pattern;
   }
 
   update() {
-    // Boss stays at top of screen, regular enemies move down
-    if (!this.isBoss) {
-      this.y += this.speed;
-    } else {
-      // Boss hovers at the top with slight movement
-      if (this.y < 100) {
-        this.y += this.speed;
-      } else {
-        // Side-to-side movement for boss
-        this.x += Math.sin(this.p.frameCount * 0.02) * 1.5;
-        
-        // Keep boss within screen bounds
-        if (this.x < this.r) this.x = this.r;
-        if (this.x > this.p.width - this.r) this.x = this.p.width - this.r;
-      }
-    }
+    const shouldShoot = this.enemy.update();
     
-    this.rotationAngle += this.isBoss ? 0.005 : 0.01;
-    this.pulseValue = (Math.sin(this.p.frameCount * 0.1) + 1) * 30;
-    
-    // Determine if enemy should shoot based on fire rate
-    const currentTime = this.p.millis();
-    const shouldShoot = currentTime - this.lastShotTime >= this.fireRate;
-    
-    if (shouldShoot) {
-      this.lastShotTime = currentTime;
-    }
+    // Update the proxy properties
+    this.x = this.enemy.x;
+    this.y = this.enemy.y;
+    this.health = this.enemy.health;
+    this.rotationAngle = this.enemy.rotationAngle;
+    this.pulseValue = this.enemy.pulseValue;
     
     return shouldShoot;
   }
 
   shoot() {
-    if (this.isBoss) {
-      // Boss shooting patterns
-      switch(this.pattern) {
-        case 0: // Spread shot
-          const bullets = [];
-          for (let i = -2; i <= 2; i++) {
-            bullets.push(new Bullet(this.p, this.x + (i * 15), this.y + this.r, i * 1.5, 5, false, 2));
-          }
-          return bullets;
-        
-        case 1: // Heavy shots
-          return new Bullet(this.p, this.x, this.y + this.r, 0, 4, false, 4);
-          
-        case 2: // Rapid double shot
-          const leftBullet = new Bullet(this.p, this.x - 20, this.y + this.r, -0.5, 6, false, 2);
-          const rightBullet = new Bullet(this.p, this.x + 20, this.y + this.r, 0.5, 6, false, 2);
-          return [leftBullet, rightBullet];
-          
-        default:
-          return new Bullet(this.p, this.x, this.y + this.r, 0, 6, false, 2);
-      }
-    } else {
-      // Regular enemy shooting based on type
-      switch(this.type) {
-        case 1: // Tanky enemy - slower but stronger bullet
-          return new Bullet(this.p, this.x, this.y + this.r, 0, 4, false, 2);
-          
-        case 2: // Fast enemy - fast bullet
-          return new Bullet(this.p, this.x, this.y + this.r, 0, 8, false, 1);
-          
-        case 3: // Rapid fire - normal bullets
-          return new Bullet(this.p, this.x, this.y + this.r, 0, 6, false, 1);
-          
-        case 4: // Heavy gunner - spread shot
-          const leftBullet = new Bullet(this.p, this.x - 10, this.y + this.r, -1, 5, false, 1);
-          const centerBullet = new Bullet(this.p, this.x, this.y + this.r, 0, 5, false, 1);
-          const rightBullet = new Bullet(this.p, this.x + 10, this.y + this.r, 1, 5, false, 1);
-          return [leftBullet, centerBullet, rightBullet];
-          
-        default: // Basic enemy - standard bullet
-          return new Bullet(this.p, this.x, this.y + this.r, 0, 6, false, 1);
-      }
-    }
+    return this.enemy.shoot();
   }
 
   draw() {
-    this.p.push();
-    this.p.translate(this.x, this.y);
-    this.p.rotate(this.rotationAngle);
-    
-    if (this.isBoss) {
-      // Boss enemy design
-      const healthPercent = this.health / this.maxHealth;
-      const bossScale = 2.5; // Boss is larger
-      
-      // Main body
-      this.p.fill(150, 20, 60);
-      this.p.stroke(255, 50, 80);
-      this.p.strokeWeight(2);
-      
-      // Hexagonal shape for boss
-      this.p.beginShape();
-      for (let i = 0; i < 6; i++) {
-        const angle = i * this.p.TWO_PI / 6;
-        const px = Math.cos(angle) * this.r * bossScale;
-        const py = Math.sin(angle) * this.r * bossScale;
-        this.p.vertex(px, py);
-      }
-      this.p.endShape(this.p.CLOSE);
-      
-      // Boss core
-      this.p.fill(255, 50, 100, 150 + this.pulseValue);
-      this.p.ellipse(0, 0, this.r * 1.5, this.r * 1.5);
-      
-      // Weapon pods
-      this.p.fill(100, 10, 30);
-      this.p.ellipse(-this.r * 1.5, 0, this.r * 0.8, this.r * 0.8);
-      this.p.ellipse(this.r * 1.5, 0, this.r * 0.8, this.r * 0.8);
-      
-      // Glowing elements
-      this.p.fill(255, 100, 100, 100 + this.pulseValue);
-      this.p.noStroke();
-      for (let i = 0; i < 3; i++) {
-        const angle = i * this.p.TWO_PI / 3 + this.p.frameCount * 0.02;
-        const px = Math.cos(angle) * this.r;
-        const py = Math.sin(angle) * this.r;
-        this.p.ellipse(px, py, this.r * 0.4, this.r * 0.4);
-      }
-      
-      // Draw health bar above boss
-      this.p.pop(); // Reset transformation for health bar positioning
-      
-      // Health bar container
-      const barWidth = this.r * 5;
-      const barHeight = 10;
-      const barX = this.x - barWidth / 2;
-      const barY = this.y - this.r * 3;
-      
-      this.p.fill(50, 50, 70);
-      this.p.rect(barX, barY, barWidth, barHeight, 5);
-      
-      // Health fill
-      const fillColor = this.p.lerpColor(
-        this.p.color(255, 30, 30),
-        this.p.color(30, 255, 100),
-        healthPercent
-      );
-      this.p.fill(fillColor);
-      this.p.rect(barX, barY, barWidth * healthPercent, barHeight, 5);
-      
-      // Health percentage
-      this.p.fill(255);
-      this.p.textSize(12);
-      this.p.textAlign(this.p.CENTER, this.p.CENTER);
-      this.p.text(Math.round(healthPercent * 100) + "%", this.x, barY - 10);
-      
-    } else {
-      // Regular enemy designs based on type
-      switch(this.type) {
-        case 0: // Original triangle enemy
-          this.p.fill(180, 30, 30);
-          this.p.stroke(255, 80, 80);
-          this.p.strokeWeight(1.5);
-          this.p.triangle(
-            0, -this.r,
-            -this.r, this.r,
-            this.r, this.r
-          );
-          
-          // Glowing core
-          this.p.fill(255, 100, 100, 150 + this.pulseValue);
-          this.p.noStroke();
-          this.p.ellipse(0, 0, this.r * 0.6, this.r * 0.6);
-          break;
-          
-        case 1: // Tanky enemy - larger, shield-like
-          this.p.fill(90, 90, 150);
-          this.p.stroke(150, 150, 220);
-          this.p.strokeWeight(2);
-          this.p.ellipse(0, 0, this.r * 2.2, this.r * 2.2);
-          
-          // Shield pattern
-          this.p.noFill();
-          this.p.stroke(150, 150, 220, 150);
-          this.p.arc(0, 0, this.r * 1.8, this.r * 1.8, this.p.PI * 0.25, this.p.PI * 0.75);
-          this.p.arc(0, 0, this.r * 1.8, this.r * 1.8, this.p.PI * 1.25, this.p.PI * 1.75);
-          
-          // Core
-          this.p.fill(120, 120, 220, 150 + this.pulseValue);
-          this.p.noStroke();
-          this.p.ellipse(0, 0, this.r * 1, this.r * 1);
-          break;
-          
-        case 2: // Fast enemy - sleek, arrow-like
-          this.p.fill(220, 100, 30);
-          this.p.stroke(255, 150, 50);
-          this.p.strokeWeight(1.5);
-          this.p.beginShape();
-          this.p.vertex(0, -this.r * 1.5); // Sharp front
-          this.p.vertex(-this.r * 0.8, this.r * 0.5);
-          this.p.vertex(0, 0);
-          this.p.vertex(this.r * 0.8, this.r * 0.5);
-          this.p.endShape(this.p.CLOSE);
-          
-          // Thrusters
-          this.p.fill(255, 150, 0, 150 + this.pulseValue);
-          this.p.noStroke();
-          const thrusterSize = 3 + Math.sin(this.p.frameCount * 0.3) * 2;
-          this.p.ellipse(-this.r * 0.4, this.r * 0.3, thrusterSize, thrusterSize * 2);
-          this.p.ellipse(this.r * 0.4, this.r * 0.3, thrusterSize, thrusterSize * 2);
-          break;
-          
-        case 3: // Rapid fire enemy - twin-cannon
-          this.p.fill(30, 120, 30);
-          this.p.stroke(50, 180, 50);
-          this.p.strokeWeight(1.5);
-          this.p.rect(-this.r, -this.r, this.r * 2, this.r * 2, 5);
-          
-          // Gun barrels
-          this.p.fill(20, 80, 20);
-          this.p.rect(-this.r * 0.6, 0, this.r * 0.3, this.r, 2);
-          this.p.rect(this.r * 0.3, 0, this.r * 0.3, this.r, 2);
-          
-          // Energy core
-          this.p.fill(80, 255, 80, 100 + this.pulseValue);
-          this.p.noStroke();
-          this.p.ellipse(0, -this.r * 0.3, this.r * 0.7, this.r * 0.7);
-          break;
-          
-        case 4: // Heavy gunner - large with multiple guns
-          this.p.fill(90, 30, 90);
-          this.p.stroke(140, 50, 140);
-          this.p.strokeWeight(1.5);
-          this.p.ellipse(0, 0, this.r * 2, this.r * 1.6);
-          
-          // Triple cannon
-          this.p.fill(70, 20, 70);
-          this.p.rect(-this.r * 0.8, this.r * 0.1, this.r * 0.4, this.r * 0.7, 2);
-          this.p.rect(-this.r * 0.2, this.r * 0.1, this.r * 0.4, this.r * 0.9, 2);
-          this.p.rect(this.r * 0.4, this.r * 0.1, this.r * 0.4, this.r * 0.7, 2);
-          
-          // Energy field
-          this.p.noFill();
-          this.p.stroke(200, 50, 200, 100 + this.pulseValue * 0.5);
-          this.p.ellipse(0, 0, this.r * 2.4, this.r * 2.4);
-          
-          // Core
-          this.p.fill(220, 100, 220, 100 + this.pulseValue);
-          this.p.noStroke();
-          this.p.ellipse(0, -this.r * 0.2, this.r * 0.6, this.r * 0.6);
-          break;
-          
-        default:
-          // Fallback simple enemy design
-          this.p.fill(150, 30, 30);
-          this.p.stroke(220, 80, 80);
-          this.p.ellipse(0, 0, this.r * 2, this.r * 2);
-          break;
-      }
-      
-      // If enemy is damaged, show a health indicator for multi-hit enemies
-      if (this.health < this.maxHealth && this.maxHealth > 1) {
-        this.p.pop(); // Reset transformation
-        
-        const healthPercent = this.health / this.maxHealth;
-        const barWidth = this.r * 2;
-        const barHeight = 4;
-        const barX = this.x - barWidth / 2;
-        const barY = this.y - this.r * 1.5;
-        
-        // Health bar background
-        this.p.fill(40, 40, 60, 180);
-        this.p.rect(barX, barY, barWidth, barHeight, 2);
-        
-        // Health bar fill
-        this.p.fill(255, 50, 50);
-        this.p.rect(barX, barY, barWidth * healthPercent, barHeight, 2);
-      } else {
-        this.p.pop();
-      }
-    }
+    this.enemy.draw();
   }
 }
