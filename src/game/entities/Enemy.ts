@@ -1,3 +1,4 @@
+
 import p5 from "p5";
 import { EnemyType, BulletType } from "../types";
 import { Bullet } from "./Bullet";
@@ -39,31 +40,31 @@ export class Enemy implements EnemyType {
       this.pattern = this.p.floor(this.p.random(3)); // Different attack patterns
       this.speed = 0.5; // Slower movement
     } else {
-      // Regular enemy properties based on type
+      // Regular enemy properties based on type - NOW REQUIRES 2 HITS TO KILL
       switch(this.type) {
         case 0: // Basic enemy (original)
-          this.health = 1;
+          this.health = 2; // Increased from 1
           this.fireRate = 2000;
           break;
         case 1: // Tanky enemy
-          this.health = 3;
+          this.health = 4; // Increased from 3
           this.fireRate = 2500;
           break;
         case 2: // Fast enemy
-          this.health = 1;
+          this.health = 2; // Increased from 1
           this.speed *= 1.5;
           this.fireRate = 2200;
           break;
         case 3: // Rapid fire enemy
-          this.health = 1;
+          this.health = 2; // Increased from 1
           this.fireRate = 1500;
           break;
         case 4: // Heavy gunner
-          this.health = 2;
+          this.health = 3; // Increased from 2
           this.fireRate = 3000;
           break;
         default:
-          this.health = 1;
+          this.health = 2; // Increased from 1
           this.fireRate = 2000;
       }
       this.maxHealth = this.health;

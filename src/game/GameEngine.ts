@@ -36,7 +36,7 @@ export class GameEngine {
       lastShotTime: 0,
       shootDelay: 300,
       lastEnemySpawnTime: 0,
-      enemySpawnInterval: 1500,
+      enemySpawnInterval: 1200, // Decreased from 1500 for higher frequency
       hitFlash: 0,
       backgroundParticles: [],
       gameStarted: false,
@@ -409,12 +409,12 @@ export class GameEngine {
       return;
     }
     
-    // Regular enemy spawning logic
+    // Regular enemy spawning logic - INCREASED FREQUENCY
     if (this.p.millis() - this.state.lastEnemySpawnTime > this.state.enemySpawnInterval) {
-      // Determine how many enemies to spawn (1-3 based on score)
+      // Determine how many enemies to spawn (1-4 based on score) - INCREASED MAX BY 1
       // Make this scale with the number of bosses defeated to increase difficulty
-      const baseSpawnCount = Math.min(3, Math.floor(this.state.score / 10) + 1);
-      const additionalEnemies = Math.min(3, Math.floor(this.state.bossesDefeated / 2));
+      const baseSpawnCount = Math.min(4, Math.floor(this.state.score / 8) + 1); // Changed from 10 to 8 to increase spawn rate
+      const additionalEnemies = Math.min(4, Math.floor(this.state.bossesDefeated / 2)); // Increased max from 3 to 4
       const spawnCount = baseSpawnCount + additionalEnemies;
       
       for (let i = 0; i < spawnCount; i++) {
@@ -471,8 +471,8 @@ export class GameEngine {
       
       // Gradually increase difficulty - faster spawn rate
       // Make spawn rate decrease more rapidly after each boss is defeated
-      const difficultyMultiplier = 0.992 - (this.state.bossesDefeated * 0.001);
-      if (this.state.enemySpawnInterval > 600) {
+      const difficultyMultiplier = 0.990 - (this.state.bossesDefeated * 0.001); // Increased difficulty (0.992 → 0.990)
+      if (this.state.enemySpawnInterval > 450) { // Decreased minimum spawn interval from 600 to 450
         this.state.enemySpawnInterval *= difficultyMultiplier;
       }
     }
@@ -1375,7 +1375,7 @@ export class GameEngine {
     this.state.lastShotTime = 0;
     this.state.shootDelay = 300;
     this.state.lastEnemySpawnTime = 0;
-    this.state.enemySpawnInterval = 1500;
+    this.state.enemySpawnInterval = 1200;
     this.state.hitFlash = 0;
     this.state.backgroundParticles = [];
     this.state.gameOver = false;

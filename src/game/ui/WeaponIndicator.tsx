@@ -66,6 +66,34 @@ const WeaponIndicator: React.FC<WeaponIndicatorProps> = ({ currentWeapon, weapon
     return null;
   };
 
+  // Add damage indicator - NEW FUNCTIONALITY
+  const getDamageText = () => {
+    const level = weaponLevels[currentWeapon];
+    let baseDamage = 0;
+    
+    // Base damage values per weapon
+    switch(currentWeapon) {
+      case 0: // Standard gun
+        baseDamage = 10 + (level * 3);
+        break;
+      case 1: // Shotgun (per pellet)
+        baseDamage = 6 + (level * 2);
+        break;
+      case 2: // Laser
+        baseDamage = 20 + (level * 4);
+        break;
+      case 3: // Plasma
+        baseDamage = 40 + (level * 5);
+        break;
+    }
+    
+    return (
+      <div className="text-xs text-slate-400 mt-1">
+        Damage: <span className={getWeaponColor(currentWeapon)}>{baseDamage}</span>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-black p-2 px-3 rounded-lg shadow-[0_0_25px_rgba(0,0,0,1)] border-2 border-slate-700">
       <div className="flex items-center gap-2 mb-1">
@@ -79,6 +107,7 @@ const WeaponIndicator: React.FC<WeaponIndicatorProps> = ({ currentWeapon, weapon
         </div>
       </div>
       {renderDirectionalIndicators()}
+      {getDamageText()}
       <div className="mt-1 flex gap-1">
         {weaponNames.map((_, index) => (
           <div 
