@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import p5 from "p5";
@@ -9,6 +8,7 @@ import ShopInterface from "../game/ui/ShopInterface";
 import GameOverScreen from "../game/ui/GameOverScreen";
 import GameStartScreen from "../game/ui/GameStartScreen";
 import WeaponIndicator from "../game/ui/WeaponIndicator";
+import { toast } from "sonner";
 
 const Index = () => {
   const gameContainerRef = useRef<HTMLDivElement>(null);
@@ -29,8 +29,31 @@ const Index = () => {
   const [currentWeapon, setCurrentWeapon] = useState(0);
   const [weaponLevels, setWeaponLevels] = useState([0, 0, 0, 0]); // Levels for all weapons
   
+  // Controls tooltip shown state
+  const [controlsShown, setControlsShown] = useState(false);
+  
   // Weapon names array
   const weaponNames = ["Standard Gun", "Shotgun", "Laser", "Plasma Cannon"];
+
+  // Show controls tooltip when game starts
+  useEffect(() => {
+    if (gameStarted && !controlsShown) {
+      setControlsShown(true);
+      
+      // Show toast notifications for controls
+      toast.info("Use keys 1-4 to switch weapons", {
+        position: "bottom-center",
+        duration: 5000,
+      });
+      
+      setTimeout(() => {
+        toast.info("Press S to open the shop", {
+          position: "bottom-center",
+          duration: 5000,
+        });
+      }, 6000);
+    }
+  }, [gameStarted, controlsShown]);
   
   useEffect(() => {
     let myP5: p5;
@@ -115,6 +138,7 @@ const Index = () => {
   const handleRestartGame = () => {
     if (gameEngineRef.current) {
       gameEngineRef.current.resetGame();
+      setControlsShown(false); // Reset controls shown flag
     }
   };
 
@@ -147,6 +171,17 @@ const Index = () => {
                   />
                 </div>
               </div>
+              
+              {/* Controls legend (shows at game start) */}
+              {gameStarted && !gameOver && controlsShown && (
+                <div className="self-end pointer-events-auto mb-16 mr-4">
+                  <div className="bg-black/80 p-2 rounded-lg border border-gray-700 text-sm text-gray-300 opacity-80">
+                    <div><span className="text-white font-bold">1-4</span>: Switch Weapon</div>
+                    <div><span className="text-white font-bold">S</span>: Open Shop</div>
+                    <div><span className="text-white font-bold">Space</span>: Shoot</div>
+                  </div>
+                </div>
+              )}
               
               {/* Bottom row with weapon indicator */}
               <div className="self-start pointer-events-auto mb-4">

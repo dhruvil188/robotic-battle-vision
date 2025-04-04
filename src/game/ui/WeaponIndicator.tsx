@@ -66,7 +66,7 @@ const WeaponIndicator: React.FC<WeaponIndicatorProps> = ({ currentWeapon, weapon
     return null;
   };
 
-  // Add damage indicator - NEW FUNCTIONALITY
+  // Add damage indicator
   const getDamageText = () => {
     const level = weaponLevels[currentWeapon];
     let baseDamage = 0;
@@ -120,7 +120,10 @@ const WeaponIndicator: React.FC<WeaponIndicatorProps> = ({ currentWeapon, weapon
           />
         ))}
       </div>
-      <div className="text-xs text-slate-500 mt-1 text-right">PRESS [1-4]</div>
+      <div className="flex justify-between items-center mt-1">
+        <div className="text-xs text-slate-500">PRESS [1-4]</div>
+        <div className="text-xs text-slate-500">PRESS [S] for Shop</div>
+      </div>
     </div>
   );
 };
