@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import p5 from "p5";
@@ -158,13 +157,18 @@ const Index = () => {
         {gameStarted && !gameOver && (
           <div className="absolute top-0 left-0 w-full p-4 pointer-events-none z-50">
             <div className="flex flex-col justify-between h-[calc(100vh-2rem)] max-w-7xl mx-auto">
-              {/* Top row with health and score */}
+              {/* Top row with health, score, and weapon indicator */}
               <div className="flex justify-between items-start">
                 <div className="pointer-events-auto">
                   <HealthBar health={playerHealth} maxHealth={maxHealth} />
                 </div>
                 
-                <div className="pointer-events-auto">
+                <div className="pointer-events-auto flex items-start gap-4">
+                  <WeaponIndicator 
+                    currentWeapon={currentWeapon} 
+                    weaponNames={weaponNames} 
+                    weaponLevels={weaponLevels}
+                  />
                   <ScoreDisplay 
                     score={score} 
                     gold={gold} 
@@ -183,15 +187,6 @@ const Index = () => {
                   </div>
                 </div>
               )}
-              
-              {/* Bottom row with weapon indicator */}
-              <div className="self-start pointer-events-auto mb-4">
-                <WeaponIndicator 
-                  currentWeapon={currentWeapon} 
-                  weaponNames={weaponNames} 
-                  weaponLevels={weaponLevels}
-                />
-              </div>
             </div>
           </div>
         )}

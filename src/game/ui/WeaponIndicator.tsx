@@ -38,35 +38,7 @@ const WeaponIndicator: React.FC<WeaponIndicatorProps> = ({ currentWeapon, weapon
     );
   };
 
-  // Generate multi-directional fire indicators for laser and plasma
-  const renderDirectionalIndicators = () => {
-    // Only show for laser and plasma at level 2+
-    if ((currentWeapon === 2 || currentWeapon === 3) && currentLevel >= 2) {
-      const directions = Math.min(currentLevel, 4); // Max 4 directions
-      
-      return (
-        <div className="mt-1 flex justify-center">
-          {Array.from({ length: directions }).map((_, i) => {
-            // Calculate angle for each direction (-30 to +30 degrees)
-            const angleOffset = directions <= 1 ? 0 : -30 + (60 / (directions - 1)) * i;
-            const style = { transform: `rotate(${angleOffset}deg)` };
-            
-            return (
-              <div key={i} className="px-0.5">
-                <div 
-                  style={style} 
-                  className={`h-2.5 w-0.5 ${getWeaponColor(currentWeapon).replace("text-", "bg-")}`}
-                />
-              </div>
-            );
-          })}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  // Add damage indicator
+  // Get damage text
   const getDamageText = () => {
     const level = weaponLevels[currentWeapon];
     let baseDamage = 0;
@@ -87,42 +59,24 @@ const WeaponIndicator: React.FC<WeaponIndicatorProps> = ({ currentWeapon, weapon
         break;
     }
     
-    return (
-      <div className="text-xs text-slate-400 mt-1">
-        Damage: <span className={getWeaponColor(currentWeapon)}>{baseDamage}</span>
-      </div>
-    );
+    return baseDamage;
   };
 
+  // Make the component more compact for the top right position
   return (
-    <div className="bg-black p-2 px-3 rounded-lg shadow-[0_0_25px_rgba(0,0,0,1)] border-2 border-slate-700">
-      <div className="flex items-center gap-2 mb-1">
-        {getWeaponIcon(currentWeapon)}
-        <div>
-          <div className="text-xs text-slate-400 uppercase">Weapon</div>
-          <div className={`font-bold ${getWeaponColor(currentWeapon)} flex items-center gap-1`}>
-            {weaponNames[currentWeapon]}{levelDisplay}
-            {renderLevelIndicators(currentLevel)}
-          </div>
+    <div className="bg-black/70 p-1.5 rounded-lg shadow-md border border-slate-700 flex items-center gap-2">
+      {getWeaponIcon(currentWeapon)}
+      <div>
+        <div className={`text-xs font-bold ${getWeaponColor(currentWeapon)} flex items-center gap-1`}>
+          {weaponNames[currentWeapon]}{levelDisplay}
+          {renderLevelIndicators(currentLevel)}
         </div>
-      </div>
-      {renderDirectionalIndicators()}
-      {getDamageText()}
-      <div className="mt-1 flex gap-1">
-        {weaponNames.map((_, index) => (
-          <div 
-            key={index}
-            className={`h-1.5 flex-1 rounded-full ${
-              index === currentWeapon 
-                ? getWeaponColor(index).replace("text-", "bg-") 
-                : 'bg-slate-700'
-            }`}
-          />
-        ))}
-      </div>
-      <div className="flex justify-between items-center mt-1">
-        <div className="text-xs text-slate-500">PRESS [W] to switch</div>
-        <div className="text-xs text-slate-500">PRESS [S] for Shop</div>
+        <div className="flex items-center text-xs text-slate-400">
+          <span>DMG: </span>
+          <span className={getWeaponColor(currentWeapon)}>{getDamageText()}</span>
+          <span className="mx-1">•</span>
+          <span className="text-slate-500">[W]</span>
+        </div>
       </div>
     </div>
   );
