@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import p5 from "p5";
@@ -41,7 +42,7 @@ const Index = () => {
       setControlsShown(true);
       
       // Show toast notifications for controls
-      toast.info("Use keys 1-4 to switch weapons", {
+      toast.info("Press W to switch weapons", {
         position: "bottom-center",
         duration: 5000,
       });
@@ -176,7 +177,7 @@ const Index = () => {
               {gameStarted && !gameOver && controlsShown && (
                 <div className="self-end pointer-events-auto mb-16 mr-4">
                   <div className="bg-black/80 p-2 rounded-lg border border-gray-700 text-sm text-gray-300 opacity-80">
-                    <div><span className="text-white font-bold">1-4</span>: Switch Weapon</div>
+                    <div><span className="text-white font-bold">W</span>: Switch Weapon</div>
                     <div><span className="text-white font-bold">S</span>: Open Shop</div>
                     <div><span className="text-white font-bold">Space</span>: Shoot</div>
                   </div>

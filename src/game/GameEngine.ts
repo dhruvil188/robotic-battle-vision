@@ -187,8 +187,8 @@ export class GameEngine {
       }
     }
 
-    // Weapon switching with W key
-    if (this.p.keyIsPressed && this.p.key === 'w' || this.p.key === 'W') {
+    // Weapon switching with W key (modified to only use W key)
+    if (this.p.keyIsPressed && (this.p.key === 'w' || this.p.key === 'W')) {
       this.p.keyIsPressed = false; // Reset to prevent multiple switches
       this.state.player.switchWeapon();
       
@@ -402,13 +402,12 @@ export class GameEngine {
     // Modify boss spawn conditions based on shotgun level
     // After shotgun level 3, bosses will spawn more frequently
     const bossCooldownReduction = isShotgunAdvanced ? Math.min(0.7, 1 - (shotgunLevel - 2) * 0.1) : 1;
-    const bossKillThreshold = isShotgunAdvanced ? Math.max(5, 15 - (shotgunLevel - 2) * 2) : 15;
     
-    // Check if it's time to spawn a boss
-    // After the first boss is defeated, a new boss will appear based on kill threshold and multipliers
+    // Changed boss spawn logic - spawn boss every 50 kills
     const shouldSpawnBoss = this.state.bossesDefeated === 0 
       ? this.state.enemiesDestroyed >= this.state.bossSpawnThreshold
-      : this.state.bossKillCounter >= bossKillThreshold;
+      : this.state.enemiesDestroyed % 50 === 0 && this.state.enemiesDestroyed > 0 && 
+        this.state.enemiesDestroyed > (this.state.bossesDefeated * 50);
       
     if (shouldSpawnBoss && !this.state.bossActive && this.p.millis() - this.state.lastBossSpawn > 15000 * bossCooldownReduction) {
       this.spawnBoss(difficultyMultiplier);

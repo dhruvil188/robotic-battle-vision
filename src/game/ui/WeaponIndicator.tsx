@@ -121,7 +121,7 @@ const WeaponIndicator: React.FC<WeaponIndicatorProps> = ({ currentWeapon, weapon
         ))}
       </div>
       <div className="flex justify-between items-center mt-1">
-        <div className="text-xs text-slate-500">PRESS [1-4]</div>
+        <div className="text-xs text-slate-500">PRESS [W] to switch</div>
         <div className="text-xs text-slate-500">PRESS [S] for Shop</div>
       </div>
     </div>
