@@ -392,14 +392,26 @@ export class GameEngine {
   }
   
   spawnEnemies() {
+    // Get difficulty multiplier based on shotgun level (index 1 in weaponLevels)
+    const shotgunLevel = this.state.weaponLevels[1];
+    const isShotgunAdvanced = shotgunLevel >= 3;
+    
+    // Base difficulty multiplier starts at 1, increases after shotgun level 3
+    const difficultyMultiplier = isShotgunAdvanced ? 1 + ((shotgunLevel - 2) * 0.5) : 1;
+    
+    // Modify boss spawn conditions based on shotgun level
+    // After shotgun level 3, bosses will spawn more frequently
+    const bossCooldownReduction = isShotgunAdvanced ? Math.min(0.7, 1 - (shotgunLevel - 2) * 0.1) : 1;
+    const bossKillThreshold = isShotgunAdvanced ? Math.max(5, 15 - (shotgunLevel - 2) * 2) : 15;
+    
     // Check if it's time to spawn a boss
-    // After the first boss is defeated, a new boss will appear after every 15 more enemy kills
+    // After the first boss is defeated, a new boss will appear based on kill threshold and multipliers
     const shouldSpawnBoss = this.state.bossesDefeated === 0 
       ? this.state.enemiesDestroyed >= this.state.bossSpawnThreshold
-      : this.state.bossKillCounter >= 15;
+      : this.state.bossKillCounter >= bossKillThreshold;
       
-    if (shouldSpawnBoss && !this.state.bossActive && this.p.millis() - this.state.lastBossSpawn > 15000) {
-      this.spawnBoss();
+    if (shouldSpawnBoss && !this.state.bossActive && this.p.millis() - this.state.lastBossSpawn > 15000 * bossCooldownReduction) {
+      this.spawnBoss(difficultyMultiplier);
       
       // Reset the boss kill counter after spawning a new boss
       if (this.state.bossesDefeated > 0) {
@@ -411,11 +423,12 @@ export class GameEngine {
     
     // Regular enemy spawning logic - INCREASED FREQUENCY
     if (this.p.millis() - this.state.lastEnemySpawnTime > this.state.enemySpawnInterval) {
-      // Determine how many enemies to spawn (1-4 based on score) - INCREASED MAX BY 1
-      // Make this scale with the number of bosses defeated to increase difficulty
-      const baseSpawnCount = Math.min(4, Math.floor(this.state.score / 8) + 1); // Changed from 10 to 8 to increase spawn rate
-      const additionalEnemies = Math.min(4, Math.floor(this.state.bossesDefeated / 2)); // Increased max from 3 to 4
-      const spawnCount = baseSpawnCount + additionalEnemies;
+      // Determine how many enemies to spawn (1-6 based on score and difficulty)
+      // Make this scale with the number of bosses defeated and shotgun level to increase difficulty
+      const baseSpawnCount = Math.min(4, Math.floor(this.state.score / 8) + 1);
+      const additionalEnemies = Math.min(4, Math.floor(this.state.bossesDefeated / 2)); 
+      const shotgunBonus = isShotgunAdvanced ? Math.floor((shotgunLevel - 2) * 0.7) : 0;
+      const spawnCount = Math.min(6, baseSpawnCount + additionalEnemies + shotgunBonus);
       
       for (let i = 0; i < spawnCount; i++) {
         // Add some variation to positions for multiple spawns
@@ -430,7 +443,7 @@ export class GameEngine {
         // And as more bosses are defeated
         let enemyType = 0;
         const typeRoll = this.p.random();
-        const difficultyBoost = this.state.bossesDefeated * 0.05; // Each boss defeated increases chance of tougher enemies
+        const difficultyBoost = this.state.bossesDefeated * 0.05 + (isShotgunAdvanced ? (shotgunLevel - 2) * 0.1 : 0);
         
         if (this.state.score > 50 || this.state.bossesDefeated > 0) {
           if (typeRoll < Math.max(0.1, 0.3 - difficultyBoost)) enemyType = 0; // Basic - less common as game progresses
@@ -452,8 +465,8 @@ export class GameEngine {
           else enemyType = 1; // Tanky
         }
         
-        // Increase enemy speed based on bosses defeated
-        const speedBoost = 1 + (this.state.bossesDefeated * 0.1);
+        // Increase enemy speed based on bosses defeated and shotgun level
+        const speedBoost = 1 + (this.state.bossesDefeated * 0.1) + (isShotgunAdvanced ? (shotgunLevel - 2) * 0.15 : 0);
         const baseSpeed = this.p.random(2, 3.5);
         
         const enemy = new Enemy(
@@ -461,8 +474,10 @@ export class GameEngine {
           spawnX, 
           -30 - (i * 30), // Stagger vertical positions
           20, 
-          baseSpeed * speedBoost, // Speed increases with each boss defeated
-          enemyType
+          baseSpeed * speedBoost, // Speed increases with each boss defeated and shotgun level
+          enemyType,
+          false, // Not a boss
+          difficultyMultiplier // Pass the difficulty multiplier to scale boss health/damage
         );
         this.state.enemies.push(enemy);
       }
@@ -471,14 +486,15 @@ export class GameEngine {
       
       // Gradually increase difficulty - faster spawn rate
       // Make spawn rate decrease more rapidly after each boss is defeated
-      const difficultyMultiplier = 0.990 - (this.state.bossesDefeated * 0.001); // Increased difficulty (0.992 → 0.990)
-      if (this.state.enemySpawnInterval > 450) { // Decreased minimum spawn interval from 600 to 450
-        this.state.enemySpawnInterval *= difficultyMultiplier;
+      // Additional acceleration based on shotgun level
+      const difficultyFactor = 0.990 - (this.state.bossesDefeated * 0.001) - (isShotgunAdvanced ? (shotgunLevel - 2) * 0.002 : 0);
+      if (this.state.enemySpawnInterval > 350) { // Decreased minimum spawn interval from 450 to 350
+        this.state.enemySpawnInterval *= difficultyFactor;
       }
     }
   }
   
-  spawnBoss() {
+  spawnBoss(difficultyMultiplier = 1) {
     // Create boss at the top center of the screen
     const bossX = this.p.width / 2;
     const bossY = -50;
@@ -490,7 +506,8 @@ export class GameEngine {
       30, // Larger radius
       1.5, // Speed
       undefined, // Random type
-      true // Is boss
+      true, // Is boss
+      difficultyMultiplier // Pass the difficulty multiplier to scale boss health/damage
     );
     
     this.state.enemies.push(boss);
@@ -499,7 +516,11 @@ export class GameEngine {
     
     // Show boss warning with increasing threat level
     const bossLevel = this.state.bossesDefeated + 1;
-    toast.error(`WARNING: Level ${bossLevel} Boss approaching!`, {
+    const difficultyMessage = difficultyMultiplier > 1.5 ? " [EXTREME]" : 
+                             difficultyMultiplier > 1.2 ? " [HARD]" : 
+                             difficultyMultiplier > 1 ? " [MEDIUM]" : "";
+    
+    toast.error(`WARNING: Level ${bossLevel} Boss approaching!${difficultyMessage}`, {
       position: "top-center",
       duration: 3000,
     });

@@ -19,7 +19,7 @@ export class Enemy implements EnemyType {
   pattern: number;
   private p: p5;
 
-  constructor(p: p5, x: number, y: number, r: number, speed: number, type?: number, isBoss: boolean = false) {
+  constructor(p: p5, x: number, y: number, r: number, speed: number, type?: number, isBoss: boolean = false, difficultyMultiplier: number = 1) {
     this.p = p;
     this.x = x;
     this.y = y;
@@ -33,39 +33,39 @@ export class Enemy implements EnemyType {
     this.isBoss = isBoss;
     
     if (this.isBoss) {
-      // Boss properties
-      this.health = 100;
-      this.maxHealth = 100;
-      this.fireRate = 800; // ms between shots
+      // Boss properties - now affected by difficulty multiplier
+      this.health = 100 * difficultyMultiplier;
+      this.maxHealth = 100 * difficultyMultiplier;
+      this.fireRate = Math.max(300, 800 / difficultyMultiplier); // Lower means faster firing, but min 300ms
       this.pattern = this.p.floor(this.p.random(3)); // Different attack patterns
-      this.speed = 0.5; // Slower movement
+      this.speed = 0.5 * difficultyMultiplier; // Faster movement with higher difficulty
     } else {
-      // Regular enemy properties based on type - NOW REQUIRES 2 HITS TO KILL
+      // Regular enemy properties based on type - affected by difficulty multiplier
       switch(this.type) {
         case 0: // Basic enemy (original)
-          this.health = 2; // Increased from 1
-          this.fireRate = 2000;
+          this.health = Math.ceil(2 * difficultyMultiplier); // Increased from 1, now scales with difficulty
+          this.fireRate = Math.max(500, 2000 / difficultyMultiplier);
           break;
         case 1: // Tanky enemy
-          this.health = 4; // Increased from 3
-          this.fireRate = 2500;
+          this.health = Math.ceil(4 * difficultyMultiplier); // Increased from 3, now scales with difficulty
+          this.fireRate = Math.max(600, 2500 / difficultyMultiplier);
           break;
         case 2: // Fast enemy
-          this.health = 2; // Increased from 1
-          this.speed *= 1.5;
-          this.fireRate = 2200;
+          this.health = Math.ceil(2 * difficultyMultiplier); // Increased from 1, now scales with difficulty
+          this.speed *= 1.5 * Math.min(difficultyMultiplier, 1.5); // Cap speed multiplier to prevent too fast enemies
+          this.fireRate = Math.max(500, 2200 / difficultyMultiplier);
           break;
         case 3: // Rapid fire enemy
-          this.health = 2; // Increased from 1
-          this.fireRate = 1500;
+          this.health = Math.ceil(2 * difficultyMultiplier); // Increased from 1, now scales with difficulty
+          this.fireRate = Math.max(400, 1500 / difficultyMultiplier);
           break;
         case 4: // Heavy gunner
-          this.health = 3; // Increased from 2
-          this.fireRate = 3000;
+          this.health = Math.ceil(3 * difficultyMultiplier); // Increased from 2, now scales with difficulty
+          this.fireRate = Math.max(800, 3000 / difficultyMultiplier);
           break;
         default:
-          this.health = 2; // Increased from 1
-          this.fireRate = 2000;
+          this.health = Math.ceil(2 * difficultyMultiplier);
+          this.fireRate = Math.max(500, 2000 / difficultyMultiplier);
       }
       this.maxHealth = this.health;
     }
