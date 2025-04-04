@@ -1,414 +1,148 @@
 import p5 from "p5";
 import { toast } from "sonner";
-
-class Soldier {
-  x: number;
-  y: number;
-  size: number;
-  angle: number;
-  health: number;
-  currentWeapon: number;
-  reloadTime: number;
-  private p: p5;
-
-  constructor(p: p5, x: number, y: number) {
-    this.p = p;
-    this.x = x;
-    this.y = y;
-    this.size = 30;
-    this.angle = 0;
-    this.health = 100;
-    this.currentWeapon = 0;
-    this.reloadTime = 0;
-  }
-
-  update(mouseX: number, mouseY: number) {
-    // Calculate angle to mouse position
-    this.angle = this.p.atan2(mouseY - this.y, mouseX - this.x);
-    
-    // Update reload time
-    if (this.reloadTime > 0) {
-      this.reloadTime--;
-    }
-  }
-
-  draw() {
-    this.p.push();
-    this.p.translate(this.x, this.y);
-    this.p.rotate(this.angle);
-    
-    // Draw soldier body
-    this.p.fill(50, 100, 50);
-    this.p.ellipse(0, 0, this.size, this.size);
-    
-    // Draw soldier gun
-    this.p.fill(100);
-    this.p.rect(this.size / 2, -5, this.size, 10);
-    
-    this.p.pop();
-  }
-
-  shoot(zombies: Zombie[], bullets: Bullet[], weaponLevels: number[], damage: number): boolean {
-    if (this.reloadTime > 0) return false;
-    
-    const weaponSpread = [0.1, 0.3, 0.05]; // Accuracy for each weapon
-    const weaponReloadTime = [10, 25, 5]; // Reload time for each weapon
-    const bulletCount = [1, 5, 1]; // Bullets per shot
-    
-    this.reloadTime = Math.max(5, weaponReloadTime[this.currentWeapon] - (weaponLevels[this.currentWeapon] * 2));
-    
-    // Create bullets based on weapon type
-    for (let i = 0; i < bulletCount[this.currentWeapon]; i++) {
-      const spread = weaponSpread[this.currentWeapon] * (1 - weaponLevels[this.currentWeapon] * 0.15);
-      const angle = this.angle + this.p.random(-spread, spread);
-      
-      const vx = this.p.cos(angle) * 10;
-      const vy = this.p.sin(angle) * 10;
-      
-      const bullet = new Bullet(
-        this.p,
-        this.x + this.p.cos(this.angle) * this.size,
-        this.y + this.p.sin(this.angle) * this.size,
-        vx,
-        vy,
-        damage
-      );
-      
-      bullets.push(bullet);
-    }
-    
-    return true;
-  }
-
-  switchWeapon() {
-    this.currentWeapon = (this.currentWeapon + 1) % 3;
-  }
-}
-
-class Zombie {
-  x: number;
-  y: number;
-  size: number;
-  speed: number;
-  health: number;
-  maxHealth: number;
-  angle: number;
-  type: number;
-  isBoss: boolean;
-  targetX: number;
-  targetY: number;
-  private p: p5;
-
-  constructor(p: p5, x: number, y: number, targetX: number, targetY: number, type: number = 0, isBoss: boolean = false) {
-    this.p = p;
-    this.x = x;
-    this.y = y;
-    this.targetX = targetX;
-    this.targetY = targetY;
-    this.type = type;
-    this.isBoss = isBoss;
-    
-    // Set attributes based on type
-    if (isBoss) {
-      this.size = 60;
-      this.speed = 0.6;
-      this.health = 300;
-      this.maxHealth = 300;
-    } else if (type === 0) { // Regular zombie
-      this.size = 25;
-      this.speed = 1;
-      this.health = 30;
-      this.maxHealth = 30;
-    } else if (type === 1) { // Fast zombie
-      this.size = 20;
-      this.speed = 2;
-      this.health = 15;
-      this.maxHealth = 15;
-    } else if (type === 2) { // Tanky zombie
-      this.size = 35;
-      this.speed = 0.7;
-      this.health = 60;
-      this.maxHealth = 60;
-    }
-    
-    // Calculate angle to target
-    this.angle = this.p.atan2(targetY - y, targetX - x);
-  }
-
-  update(): boolean {
-    // Move toward target
-    this.x += this.p.cos(this.angle) * this.speed;
-    this.y += this.p.sin(this.angle) * this.speed;
-    
-    // Recalculate angle to target (slight tracking)
-    const newAngle = this.p.atan2(this.targetY - this.y, this.targetX - this.x);
-    this.angle = this.p.lerp(this.angle, newAngle, 0.05);
-    
-    // Check if reached target
-    const distToTarget = this.p.dist(this.x, this.y, this.targetX, this.targetY);
-    return distToTarget < 50;
-  }
-
-  draw() {
-    this.p.push();
-    this.p.translate(this.x, this.y);
-    
-    // Draw health bar
-    const healthPct = this.health / this.maxHealth;
-    this.p.fill(255, 0, 0);
-    this.p.rect(-this.size/2, -this.size/2 - 10, this.size, 5);
-    this.p.fill(0, 255, 0);
-    this.p.rect(-this.size/2, -this.size/2 - 10, this.size * healthPct, 5);
-    
-    // Draw zombie body based on type
-    if (this.isBoss) {
-      this.p.fill(150, 30, 30);
-    } else if (this.type === 0) {
-      this.p.fill(100, 150, 100);
-    } else if (this.type === 1) {
-      this.p.fill(200, 150, 100);
-    } else if (this.type === 2) {
-      this.p.fill(50, 100, 50);
-    }
-    
-    this.p.ellipse(0, 0, this.size, this.size);
-    
-    // Draw face direction
-    this.p.rotate(this.angle);
-    this.p.fill(0);
-    this.p.ellipse(this.size/3, -this.size/5, 5, 5);
-    this.p.ellipse(this.size/3, this.size/5, 5, 5);
-    
-    this.p.pop();
-  }
-
-  takeDamage(damage: number): boolean {
-    this.health -= damage;
-    return this.health <= 0;
-  }
-}
-
-class Bullet {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  damage: number;
-  private p: p5;
-
-  constructor(p: p5, x: number, y: number, vx: number, vy: number, damage: number) {
-    this.p = p;
-    this.x = x;
-    this.y = y;
-    this.vx = vx;
-    this.vy = vy;
-    this.damage = damage;
-  }
-
-  update(): boolean {
-    this.x += this.vx;
-    this.y += this.vy;
-    
-    // Check if bullet is out of bounds
-    return (
-      this.x < 0 ||
-      this.x > this.p.width ||
-      this.y < 0 ||
-      this.y > this.p.height
-    );
-  }
-
-  draw() {
-    this.p.fill(255, 255, 100);
-    this.p.ellipse(this.x, this.y, 5, 5);
-  }
-}
-
-class Base {
-  x: number;
-  y: number;
-  size: number;
-  health: number;
-  maxHealth: number;
-  private p: p5;
-
-  constructor(p: p5, x: number, y: number) {
-    this.p = p;
-    this.x = x;
-    this.y = y;
-    this.size = 100;
-    this.health = 100;
-    this.maxHealth = 100;
-  }
-
-  draw() {
-    // Draw base health bar
-    const healthPct = this.health / this.maxHealth;
-    this.p.fill(100);
-    this.p.rect(this.x - 50, this.y - 80, 100, 10);
-    this.p.fill(
-      this.p.map(healthPct, 0, 1, 255, 0),
-      this.p.map(healthPct, 0, 1, 0, 255),
-      0
-    );
-    this.p.rect(this.x - 50, this.y - 80, 100 * healthPct, 10);
-    
-    // Draw base structure
-    this.p.fill(150);
-    this.p.ellipse(this.x, this.y, this.size, this.size);
-    
-    // Draw sandbags around base
-    this.p.fill(200, 180, 120);
-    for (let i = 0; i < 8; i++) {
-      const angle = i * this.p.TWO_PI / 8;
-      const bagX = this.x + this.p.cos(angle) * this.size/2;
-      const bagY = this.y + this.p.sin(angle) * this.size/2;
-      this.p.ellipse(bagX, bagY, 30, 20);
-    }
-  }
-
-  takeDamage(amount: number): boolean {
-    this.health -= amount;
-    return this.health <= 0;
-  }
-
-  repair(amount: number) {
-    this.health = Math.min(this.maxHealth, this.health + amount);
-  }
-}
-
-class Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  size: number;
-  life: number;
-  maxLife: number;
-  color: p5.Color;
-  private p: p5;
-  
-  constructor(p: p5, x: number, y: number, vx: number, vy: number, color: p5.Color, size: number, life: number) {
-    this.p = p;
-    this.x = x;
-    this.y = y;
-    this.vx = vx;
-    this.vy = vy;
-    this.size = size;
-    this.life = life;
-    this.maxLife = life;
-    this.color = color;
-  }
-  
-  update(): boolean {
-    this.x += this.vx;
-    this.y += this.vy;
-    this.life--;
-    return this.life <= 0;
-  }
-  
-  draw() {
-    const alpha = this.p.map(this.life, 0, this.maxLife, 0, 255);
-    this.p.fill(
-      this.p.red(this.color),
-      this.p.green(this.color),
-      this.p.blue(this.color),
-      alpha
-    );
-    this.p.noStroke();
-    this.p.ellipse(this.x, this.y, this.size, this.size);
-  }
-}
+import { GameState, GameAssets, BulletType, VisualEffects, ShopItem } from "./types";
+import { Player } from "./entities/Player";
+import { Enemy } from "./entities/Enemy";
+import { Bullet } from "./entities/Bullet";
+import { Particle } from "./entities/Particle";
+import { Explosion } from "./entities/Explosion";
+import { PowerUp } from "./entities/PowerUp";
+import { Star } from "./entities/Star";
+import { ParallaxLayer } from "./entities/ParallaxLayer";
 
 export class GameEngine {
   private p: p5;
-  public state: any;
-  private base: Base;
-  private soldier: Soldier;
-  private zombies: Zombie[];
-  private bullets: Bullet[];
-  private particles: Particle[];
+  public state: GameState;
+  private assets: GameAssets;
   
   constructor(p: p5) {
     this.p = p;
+    this.assets = {};
     
     // Initialize game state
     this.state = {
       player: null,
-      zombies: [],
+      enemies: [],
       bullets: [],
+      enemyBullets: [],
       score: 0,
       gold: 0,
-      baseHealth: 100,
-      maxBaseHealth: 100,
-      zombiesKilled: 0,
-      bossesDefeated: 0,
-      lastSpawnTime: 0,
-      spawnInterval: 2000,
-      wave: 1,
-      zombiesPerWave: 10,
-      zombiesRemaining: 10,
-      waveActive: false,
-      waveCompleteTime: 0,
-      betweenWaves: false,
-      shopOpen: false,
+      enemiesDestroyed: 0,
+      bossActive: false,
+      lastBossSpawn: 0,
+      bossSpawnThreshold: 50, // Boss appears after 50 enemies destroyed
+      bossesDefeated: 0,      // Track how many bosses have been defeated
+      bossKillCounter: 0,     // Counter for kills after first boss is defeated
+      lastShotTime: 0,
+      shootDelay: 300,
+      lastEnemySpawnTime: 0,
+      enemySpawnInterval: 1500,
+      hitFlash: 0,
+      backgroundParticles: [],
       gameStarted: false,
       gameOver: false,
+      stars: [],
+      explosions: [],
+      shieldOpacity: 0,
+      powerUps: [],
+      powerUpLastSpawnTime: 0,
+      powerUpSpawnInterval: 10000,
+      parallaxLayers: [],
+      tripleShot: 0,
+      speedBoost: 0,
+      visualEffects: {
+        screenShake: 0,
+        screenShakeIntensity: 0,
+        flashEffect: {
+          active: false,
+          color: null,
+          alpha: 0,
+          duration: 0
+        },
+        distortionEffect: {
+          active: false,
+          intensity: 0,
+          duration: 0,
+          centerX: 0,
+          centerY: 0
+        }
+      },
+      shopOpen: false,
       shopItems: [
         {
-          id: 'repair',
-          name: 'Repair Base',
-          description: 'Restore 25 base health',
-          price: 10,
-          type: 'repair'
+          id: 'health_refill',
+          name: 'Health Refill',
+          description: 'Restore full health',
+          price: 1,
+          type: 'health'
         },
         {
           id: 'shotgun',
           name: 'Shotgun',
-          description: 'Wide spread, good for crowds',
-          price: 50,
-          type: 'weapon',
-          purchased: false
-        },
-        {
-          id: 'rifle',
-          name: 'Assault Rifle',
-          description: 'Fast firing, accurate weapon',
-          price: 100,
-          type: 'weapon',
-          purchased: false
-        },
-        {
-          id: 'ammo',
-          name: 'Ammo Refill',
-          description: 'Restore full ammo',
+          description: 'Triple spread shot',
           price: 5,
-          type: 'ammo'
+          type: 'weapon',
+          purchased: false
+        },
+        {
+          id: 'laser',
+          name: 'Laser',
+          description: 'Fast piercing beam',
+          price: 10,
+          type: 'weapon',
+          purchased: false
+        },
+        {
+          id: 'plasma',
+          name: 'Plasma Cannon',
+          description: 'High damage, slow shot',
+          price: 15,
+          type: 'weapon',
+          purchased: false
+        },
+        {
+          id: 'shield',
+          name: 'Shield Boost',
+          description: 'Temporary shield',
+          price: 3,
+          type: 'upgrade'
         }
       ],
-      weaponLevels: [1, 0, 0],
-      ammo: 30,
-      maxAmmo: 30
+      weaponLevels: [0, 0, 0, 0] // Standard, Shotgun, Laser, Plasma - all starting at level 0
     };
-    
-    // Create base and soldier
-    this.base = new Base(p, p.width / 2, p.height / 2);
-    this.soldier = new Soldier(p, p.width / 2, p.height / 2);
-    this.zombies = [];
-    this.bullets = [];
-    this.particles = [];
-    
-    // Set soldier as player in game state
-    this.state.player = this.soldier;
   }
   
   preload() {
-    // Load assets if needed
+    // Load font
+    this.assets.gameFont = this.p.loadFont('https://fonts.gstatic.com/s/rubik/v28/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-B4i1UA.ttf');
+    
+    try {
+      // Initialize sounds if p5.sound is available
+      if (this.p.SoundFile) {
+        this.assets.shootSound = new this.p.SoundFile("data:audio/wav;base64,UklGRpQEAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YXAEAABt7XDtgO2X7bLtzO3o7QHuGe4v7kXuWu5v7oLule6m7rjuyO7X7ufu9e4C7w7vGe8k7y3vNe877z/vQu9E70XvRO9C70HvPO857zPvLO8l7xzvE+8I7//u9O7p7tzu0e7E7rjuq+6d7o/ufu5w7mDuT+4+7izuGu4I7vXt4u3O7brtpu2R7X3taO1T7T7tKe0U7f/s6uzV7MHsrOyX7ILsb+xb7EfsM+wg7A7s/OvL6+3rAewV7CnsP+xV7GvsgeyX7K7sxezc7PPsCu0h7TjtT+1m7X3tle2r7cLt2O3v7Qbu3e0W7k7uh+7B7vru8+4s72XvnO/T7wLwA/AK8ynzXfOX88bztuLwEfE38VzxgfGm8cnx6/EL8irySPJm8oPyoPK78tbyzPG98djx8vEN8ib+NfNA80zzWPNi823zePOC844zmfOj86zzs/O5877zwvPG88jzyvPK88rzyfPI88bzw/PCYMsnyXzJy8kXynDKu8oEy0zLksvZyxrMV8yCzKbMxczdzO3M980HzQ/NFc0Z5M/NJc8zz0DPTc9Zz2TPbs93z3/Phc+Kz47Pkc+Sz5LPkc+Pz4zPiM+Ez3/Pes91z2/PaM9hz1nPUM9Gz0DPXeDHH8k9yVrJdMmOyabJvcnTyenJ/skSyiXKNspGylLKXcpoyoZ3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKd4p3ineKPY/Njv2OLo9ej42PvI/qjxmQSJB3kKaQ1JD9KNeQN+BZ4HngmOC24NXg9+Kh4VLhM+EV4fngy+hn4kvCZMp4yozKoMqzysbK2crryv3KD8sgyzLKPMq6ysvK28ogy4nLmcupy7jLx8vWy+TL8sv/yyvJYsyNzLnM5Mpb79/vLvIw8vnyXPNA8+DzfPQZ9bb1VPbI9kH3u/c0+K74Jvmf+Rj6kfp0+3377/yp/WL+Hf/Y/2kAHAG0AYkCSgMNBNMEngVlBi4H9wfCCIwJVwoiC+4LugyGDVQOIg/xD7/QQfD/8Ijy/PJn87nzB/RT9J/06/Q19YD1y/UV9l72p/bw9jn3gffJ9xL4WviT+dX5DPpJ+oH6uvry+ir7YvuZ+9H7CPw//HX8q/zi/Bn9T/2F/bn95/0b/k/+g/63/uv+H/9S/4X/uP/r/x0AUACCALQAGQBbAAEBMgFjAZMBwgHxASACTwJ9AqsCKAKFAusCEAM0A1cDeQOaA7oDVwKXArUCGQMUBFAEpwT9BE8FoQXyBUMGlAbkBjQHgwfTBxcIYAiqCPIIOwmCCcgJDgpTCpcK2wo=");
+        
+        if (this.assets.shootSound) {
+          this.assets.shootSound.setVolume(0.2);
+        }
+      }
+    } catch (error) {
+      console.log("Sound not supported:", error);
+    }
   }
   
   setup() {
-    // Setup the game
-    this.resetGame();
+    // Create the player
+    this.state.player = new Player(this.p, this.p.width / 2, this.p.height - 100, 60, 40, this.state.weaponLevels);
+    
+    // Create stars
+    for (let i = 0; i < 150; i++) {
+      this.state.stars.push(new Star(this.p));
+    }
+    
+    // Set font
+    if (this.assets.gameFont) {
+      this.p.textFont(this.assets.gameFont);
+    }
     
     // Toast notification
     toast.success("Game loaded! Press ENTER to start", {
@@ -417,28 +151,909 @@ export class GameEngine {
     });
   }
   
+  handleInput() {
+    // Toggle shop with 'S' key
+    if (this.p.keyIsPressed && (this.p.key === 's' || this.p.key === 'S')) {
+      this.p.keyIsPressed = false; // Reset to prevent multiple toggles
+      this.state.shopOpen = !this.state.shopOpen;
+      
+      if (this.state.shopOpen) {
+        toast.info("Shop opened. Press S to close.", {
+          position: "bottom-center",
+          duration: 2000,
+        });
+      }
+    }
+    
+    // If shop is open, handle shop interactions instead of regular gameplay
+    if (this.state.shopOpen) {
+      this.handleShopInput();
+      return;
+    }
+    
+    // Player movement with speed boost consideration
+    const moveSpeed = this.state.speedBoost > 0 ? this.state.player.speed * 1.5 : this.state.player.speed;
+    
+    if (this.p.keyIsDown(37)) { // Left arrow
+      this.state.player.x -= moveSpeed;
+      if (this.state.player.x - this.state.player.w / 2 < 0) {
+        this.state.player.x = this.state.player.w / 2;
+      }
+    }
+    if (this.p.keyIsDown(39)) { // Right arrow
+      this.state.player.x += moveSpeed;
+      if (this.state.player.x + this.state.player.w / 2 > this.p.width) {
+        this.state.player.x = this.p.width - this.state.player.w / 2;
+      }
+    }
+
+    // Weapon switching with W key
+    if (this.p.keyIsPressed && this.p.key === 'w' || this.p.key === 'W') {
+      this.p.keyIsPressed = false; // Reset to prevent multiple switches
+      this.state.player.switchWeapon();
+      
+      // Add flash effect for weapon switch
+      this.triggerFlashEffect(this.p.color(180, 180, 255), 60);
+      
+      // Get current weapon name for toast
+      let weaponName = "Standard Gun";
+      if (this.state.player.currentWeapon === 1) weaponName = "Shotgun";
+      if (this.state.player.currentWeapon === 2) weaponName = "Laser";
+      if (this.state.player.currentWeapon === 3) weaponName = "Plasma Cannon";
+      
+      toast.info(`Switched to ${weaponName}`, {
+        position: "bottom-center",
+        duration: 1500,
+      });
+    }
+
+    // Player shooting with cooldown
+    if (this.p.keyIsDown(32) && this.p.millis() - this.state.lastShotTime > this.state.shootDelay) { // 32 is spacebar
+      // Handle different shot types
+      if (this.state.tripleShot > 0) {
+        // Triple shot
+        const mainShot = this.state.player.shoot();
+        this.state.bullets.push(mainShot.bullet);
+        this.state.backgroundParticles.push(...mainShot.particles);
+        
+        // Create side bullets for triple shot
+        const leftBullet = new Bullet(
+          this.p, 
+          this.state.player.x - 15, 
+          this.state.player.y - this.state.player.h / 2, 
+          -2, 
+          -11, 
+          true
+        );
+        
+        const rightBullet = new Bullet(
+          this.p, 
+          this.state.player.x + 15, 
+          this.state.player.y - this.state.player.h / 2, 
+          2, 
+          -11,
+          true
+        );
+        
+        this.state.bullets.push(leftBullet, rightBullet);
+      } else {
+        // Normal shot based on weapon type
+        const result = this.state.player.shoot();
+        this.state.bullets.push(result.bullet);
+        
+        // Add extra bullets if present (for shotgun)
+        if (result.extraBullets && result.extraBullets.length > 0) {
+          this.state.bullets.push(...result.extraBullets);
+        }
+        
+        this.state.backgroundParticles.push(...result.particles);
+      }
+      
+      this.state.lastShotTime = this.p.millis();
+      
+      // Play shoot sound
+      if (this.assets.shootSound) {
+        try {
+          this.assets.shootSound.play();
+        } catch (error) {
+          console.log("Error playing sound:", error);
+        }
+      }
+    }
+  }
+  
+  handleShopInput() {
+    // Handle number keys 1-5 to buy items
+    if (this.p.keyIsPressed) {
+      const keyNum = parseInt(this.p.key);
+      if (!isNaN(keyNum) && keyNum >= 1 && keyNum <= this.state.shopItems.length) {
+        this.p.keyIsPressed = false; // Reset to prevent multiple purchases
+        this.buyShopItem(keyNum - 1);
+      }
+    }
+  }
+  
+  buyShopItem(itemIndex: number) {
+    const item = this.state.shopItems[itemIndex];
+    
+    // Helper to get weapon index from ID
+    const getWeaponIndex = (id: string) => {
+      switch(id) {
+        case 'shotgun': return 1;
+        case 'laser': return 2;
+        case 'plasma': return 3;
+        default: return 0;
+      }
+    };
+    
+    // Handle weapon upgrades
+    if (item.type === 'weapon' && item.purchased) {
+      const weaponIndex = getWeaponIndex(item.id);
+      const currentLevel = this.state.weaponLevels[weaponIndex];
+      
+      // Max level check
+      if (currentLevel >= 5) {
+        toast.info(`${item.name} is already at maximum level!`, {
+          position: "bottom-center",
+          duration: 2000,
+        });
+        return;
+      }
+      
+      // Calculate upgrade price based on level
+      const upgradePrice = Math.ceil((currentLevel + 1) * (item.price * 0.8));
+      
+      // Check if player has enough gold
+      if (this.state.gold < upgradePrice) {
+        toast.error(`Not enough credits! You need ${upgradePrice} credits.`, {
+          position: "bottom-center",
+          duration: 2000,
+        });
+        return;
+      }
+      
+      // Apply the upgrade
+      this.state.weaponLevels[weaponIndex]++;
+      this.state.gold -= upgradePrice;
+      
+      // Show success message
+      toast.success(`${item.name} upgraded to Level ${this.state.weaponLevels[weaponIndex]}!`, {
+        position: "bottom-center",
+        duration: 2000,
+      });
+      
+      // Add visual effect
+      this.triggerFlashEffect(this.p.color(180, 180, 255), 60);
+      
+      return;
+    }
+    
+    // Check if player has enough gold for the initial purchase
+    if (this.state.gold < item.price) {
+      toast.error(`Not enough credits! You need ${item.price} credits.`, {
+        position: "bottom-center",
+        duration: 2000,
+      });
+      return;
+    }
+    
+    // Process purchase based on item type (original logic for initial purchases)
+    if (item.type === 'health') {
+      this.state.player.health = 100;
+      this.state.gold -= item.price;
+      toast.success(`Health restored!`, {
+        position: "bottom-center",
+        duration: 1500,
+      });
+      
+      // Add visual effect
+      this.triggerFlashEffect(this.p.color(0, 255, 0), 60);
+    } 
+    else if (item.type === 'weapon') {
+      // Check if weapon is already purchased
+      if (item.purchased) {
+        toast.info(`You already own the ${item.name}!`, {
+          position: "bottom-center",
+          duration: 1500,
+        });
+        return;
+      }
+      
+      // Mark as purchased
+      item.purchased = true;
+      this.state.gold -= item.price;
+      
+      // Switch to newly purchased weapon
+      if (item.id === 'shotgun') this.state.player.currentWeapon = 1;
+      if (item.id === 'laser') this.state.player.currentWeapon = 2;
+      if (item.id === 'plasma') this.state.player.currentWeapon = 3;
+      
+      toast.success(`${item.name} purchased and equipped!`, {
+        position: "bottom-center",
+        duration: 2000,
+      });
+      
+      // Add visual effect
+      this.triggerFlashEffect(this.p.color(180, 180, 255), 60);
+    }
+    else if (item.type === 'upgrade') {
+      if (item.id === 'shield') {
+        this.state.player.shield = 300;
+        this.state.gold -= item.price;
+        toast.success(`Shield activated!`, {
+          position: "bottom-center",
+          duration: 1500,
+        });
+        
+        // Add visual effect
+        this.triggerFlashEffect(this.p.color(30, 144, 255), 60);
+      }
+    }
+  }
+  
+  spawnEnemies() {
+    // Check if it's time to spawn a boss
+    // After the first boss is defeated, a new boss will appear after every 15 more enemy kills
+    const shouldSpawnBoss = this.state.bossesDefeated === 0 
+      ? this.state.enemiesDestroyed >= this.state.bossSpawnThreshold
+      : this.state.bossKillCounter >= 15;
+      
+    if (shouldSpawnBoss && !this.state.bossActive && this.p.millis() - this.state.lastBossSpawn > 15000) {
+      this.spawnBoss();
+      
+      // Reset the boss kill counter after spawning a new boss
+      if (this.state.bossesDefeated > 0) {
+        this.state.bossKillCounter = 0;
+      }
+      
+      return;
+    }
+    
+    // Regular enemy spawning logic
+    if (this.p.millis() - this.state.lastEnemySpawnTime > this.state.enemySpawnInterval) {
+      // Determine how many enemies to spawn (1-3 based on score)
+      // Make this scale with the number of bosses defeated to increase difficulty
+      const baseSpawnCount = Math.min(3, Math.floor(this.state.score / 10) + 1);
+      const additionalEnemies = Math.min(3, Math.floor(this.state.bossesDefeated / 2));
+      const spawnCount = baseSpawnCount + additionalEnemies;
+      
+      for (let i = 0; i < spawnCount; i++) {
+        // Add some variation to positions for multiple spawns
+        const offsetX = i === 0 ? 0 : this.p.random(-100, 100);
+        const spawnX = this.p.constrain(
+          this.p.random(this.p.width) + offsetX, 
+          50, 
+          this.p.width - 50
+        );
+        
+        // Randomly choose enemy type, with higher chance of stronger enemies as score increases
+        // And as more bosses are defeated
+        let enemyType = 0;
+        const typeRoll = this.p.random();
+        const difficultyBoost = this.state.bossesDefeated * 0.05; // Each boss defeated increases chance of tougher enemies
+        
+        if (this.state.score > 50 || this.state.bossesDefeated > 0) {
+          if (typeRoll < Math.max(0.1, 0.3 - difficultyBoost)) enemyType = 0; // Basic - less common as game progresses
+          else if (typeRoll < Math.max(0.2, 0.5 - difficultyBoost)) enemyType = 1; // Tanky
+          else if (typeRoll < Math.max(0.3, 0.7 - difficultyBoost)) enemyType = 2; // Fast
+          else if (typeRoll < Math.max(0.6, 0.9 - difficultyBoost)) enemyType = 3; // Rapid fire
+          else enemyType = 4; // Heavy gunner - more common as game progresses
+        } else if (this.state.score > 25) {
+          if (typeRoll < 0.4) enemyType = 0; // Basic
+          else if (typeRoll < 0.6) enemyType = 1; // Tanky
+          else if (typeRoll < 0.8) enemyType = 2; // Fast
+          else enemyType = 3; // Rapid fire
+        } else if (this.state.score > 10) {
+          if (typeRoll < 0.6) enemyType = 0; // Basic
+          else if (typeRoll < 0.8) enemyType = 1; // Tanky
+          else if (typeRoll < 1.0) enemyType = 2; // Fast
+        } else {
+          if (typeRoll < 1.0) enemyType = 0; // Basic
+          else enemyType = 1; // Tanky
+        }
+        
+        // Increase enemy speed based on bosses defeated
+        const speedBoost = 1 + (this.state.bossesDefeated * 0.1);
+        const baseSpeed = this.p.random(2, 3.5);
+        
+        const enemy = new Enemy(
+          this.p, 
+          spawnX, 
+          -30 - (i * 30), // Stagger vertical positions
+          20, 
+          baseSpeed * speedBoost, // Speed increases with each boss defeated
+          enemyType
+        );
+        this.state.enemies.push(enemy);
+      }
+      
+      this.state.lastEnemySpawnTime = this.p.millis();
+      
+      // Gradually increase difficulty - faster spawn rate
+      // Make spawn rate decrease more rapidly after each boss is defeated
+      const difficultyMultiplier = 0.992 - (this.state.bossesDefeated * 0.001);
+      if (this.state.enemySpawnInterval > 600) {
+        this.state.enemySpawnInterval *= difficultyMultiplier;
+      }
+    }
+  }
+  
+  spawnBoss() {
+    // Create boss at the top center of the screen
+    const bossX = this.p.width / 2;
+    const bossY = -50;
+    
+    const boss = new Enemy(
+      this.p,
+      bossX,
+      bossY,
+      30, // Larger radius
+      1.5, // Speed
+      undefined, // Random type
+      true // Is boss
+    );
+    
+    this.state.enemies.push(boss);
+    this.state.bossActive = true;
+    this.state.lastBossSpawn = this.p.millis();
+    
+    // Show boss warning with increasing threat level
+    const bossLevel = this.state.bossesDefeated + 1;
+    toast.error(`WARNING: Level ${bossLevel} Boss approaching!`, {
+      position: "top-center",
+      duration: 3000,
+    });
+    
+    // Play boss warning sound if available
+    if (this.assets.bossWarningSound) {
+      try {
+        this.assets.bossWarningSound.play();
+      } catch (error) {
+        console.log("Error playing boss warning sound:", error);
+      }
+    }
+    
+    // Create warning particles
+    for (let i = 0; i < 30; i++) {
+      const warningParticle = new Particle(
+        this.p,
+        this.p.random(this.p.width),
+        this.p.random(100),
+        this.p.random(-2, 2),
+        this.p.random(-1, 3),
+        this.p.color(255, 50, 50, this.p.random(100, 200)),
+        this.p.random(5, 15),
+        this.p.random(30, 60)
+      );
+      this.state.backgroundParticles.push(warningParticle);
+    }
+  }
+  
+  spawnPowerUps() {
+    if (this.p.millis() - this.state.powerUpLastSpawnTime > this.state.powerUpSpawnInterval) {
+      const powerUp = new PowerUp(
+        this.p, 
+        this.p.random(this.p.width * 0.1, this.p.width * 0.9), 
+        -30
+      );
+      this.state.powerUps.push(powerUp);
+      this.state.powerUpLastSpawnTime = this.p.millis();
+    }
+  }
+  
+  updateEntities() {
+    // Update stars
+    for (let star of this.state.stars) {
+      star.update();
+    }
+    
+    // Update background particles
+    for (let i = this.state.backgroundParticles.length - 1; i >= 0; i--) {
+      this.state.backgroundParticles[i].update();
+      if (this.state.backgroundParticles[i].isDead()) {
+        this.state.backgroundParticles.splice(i, 1);
+      }
+    }
+    
+    // Update explosions
+    for (let i = this.state.explosions.length - 1; i >= 0; i--) {
+      this.state.explosions[i].update();
+      if (this.state.explosions[i].isDead()) {
+        this.state.explosions.splice(i, 1);
+      }
+    }
+    
+    // Update player bullets
+    for (let i = this.state.bullets.length - 1; i >= 0; i--) {
+      const particle = this.state.bullets[i].update();
+      if (particle) {
+        this.state.backgroundParticles.push(particle);
+      }
+      
+      if (this.state.bullets[i].y < 0) {
+        this.state.bullets.splice(i, 1); // Remove bullets that go off-screen
+      }
+    }
+    
+    // Update enemy bullets
+    for (let i = this.state.enemyBullets.length - 1; i >= 0; i--) {
+      const particle = this.state.enemyBullets[i].update();
+      if (particle) {
+        this.state.backgroundParticles.push(particle);
+      }
+      
+      if (this.state.enemyBullets[i].y > this.p.height) {
+        this.state.enemyBullets.splice(i, 1); // Remove bullets that go off-screen
+      }
+    }
+    
+    // Update enemies
+    for (let i = this.state.enemies.length - 1; i >= 0; i--) {
+      const shouldShoot = this.state.enemies[i].update();
+      
+      if (shouldShoot) {
+        const bulletResult = this.state.enemies[i].shoot();
+        
+        // Handle both single bullets and arrays of bullets
+        if (Array.isArray(bulletResult)) {
+          this.state.enemyBullets.push(...bulletResult);
+        } else {
+          this.state.enemyBullets.push(bulletResult);
+        }
+      }
+      
+      // If enemy is not boss and goes off-screen, remove it
+      if (!this.state.enemies[i].isBoss && this.state.enemies[i].y > this.p.height) {
+        this.state.enemies.splice(i, 1);
+      }
+    }
+    
+    // Update power-ups
+    for (let i = this.state.powerUps.length - 1; i >= 0; i--) {
+      this.state.powerUps[i].update();
+      if (this.state.powerUps[i].y > this.p.height) {
+        this.state.powerUps.splice(i, 1); // Remove power-ups that go off-screen
+      }
+    }
+    
+    // Update power-up timers
+    if (this.state.tripleShot > 0) this.state.tripleShot--;
+    if (this.state.speedBoost > 0) this.state.speedBoost--;
+  }
+  
+  checkCollisions() {
+    // Collision detection: player bullets vs enemies
+    for (let i = this.state.bullets.length - 1; i >= 0; i--) {
+      for (let j = this.state.enemies.length - 1; j >= 0; j--) {
+        let d = this.p.dist(
+          this.state.bullets[i].x, 
+          this.state.bullets[i].y, 
+          this.state.enemies[j].x, 
+          this.state.enemies[j].y
+        );
+        
+        if (d < this.state.enemies[j].r + 5) {
+          // Apply bullet damage to enemy health
+          this.state.enemies[j].health -= this.state.bullets[i].damage || 10;
+          
+          // Create small hit effect
+          for (let k = 0; k < 5; k++) {
+            let hitParticle = new Particle(
+              this.p,
+              this.state.bullets[i].x,
+              this.state.bullets[i].y,
+              this.p.random(-2, 2),
+              this.p.random(-2, 2),
+              this.p.color(255, this.state.enemies[j].isBoss ? 100 : 200, 100, 200),
+              this.p.random(3, 8),
+              this.p.random(10, 20)
+            );
+            this.state.backgroundParticles.push(hitParticle);
+          }
+          
+          // Remove bullet
+          this.state.bullets.splice(i, 1);
+          
+          // If enemy health <= 0, destroy it
+          if (this.state.enemies[j].health <= 0) {
+            // Create explosion at enemy position
+            let explosion = new Explosion(
+              this.p,
+              this.state.enemies[j].x,
+              this.state.enemies[j].y,
+              this.state.enemies[j].r * (this.state.enemies[j].isBoss ? 3 : 1.5),
+              this.p.color(255, 100, 50, 200)
+            );
+            this.state.explosions.push(explosion);
+            
+            // Add screen shake based on enemy size or if it's a boss
+            const shakeIntensity = this.state.enemies[j].isBoss ? 10 : Math.min(5, this.state.enemies[j].r * 0.3);
+            this.triggerScreenShake(shakeIntensity);
+            
+            // Add gold for kill
+            this.state.gold += this.state.enemies[j].isBoss ? 5 : 1;
+            
+            // If it was a boss, create multiple explosions and distortion effect
+            if (this.state.enemies[j].isBoss) {
+              // Create additional explosions around the boss
+              for (let k = 0; k < 5; k++) {
+                let bossExplosion = new Explosion(
+                  this.p,
+                  this.state.enemies[j].x + this.p.random(-50, 50),
+                  this.state.enemies[j].y + this.p.random(-50, 50),
+                  this.p.random(20, 40),
+                  this.p.color(255, this.p.random(50, 150), 30, 200)
+                );
+                this.state.explosions.push(bossExplosion);
+              }
+              
+              // Trigger distortion effect
+              this.triggerDistortionEffect(
+                this.state.enemies[j].x,
+                this.state.enemies[j].y,
+                15,
+                30
+              );
+              
+              // Add colorful flash effect for boss defeat
+              this.triggerFlashEffect(this.p.color(255, 100, 50), 80);
+              
+              // Update boss state
+              this.state.bossActive = false;
+              this.state.bossesDefeated++;
+              
+              // Increment the number of bosses defeated
+              const baseScore = 25;
+              const bossBonus = this.state.bossesDefeated * 5; // Each boss gives more points
+              this.state.score += baseScore + bossBonus;
+              
+              // Spawn power-ups from boss
+              // More power-ups from higher-level bosses
+              const powerUpCount = 3 + Math.min(3, Math.floor(this.state.bossesDefeated / 2));
+              for (let k = 0; k < powerUpCount; k++) {
+                const powerUp = new PowerUp(
+                  this.p, 
+                  this.state.enemies[j].x + this.p.random(-30, 30), 
+                  this.state.enemies[j].y + this.p.random(-30, 30)
+                );
+                this.state.powerUps.push(powerUp);
+              }
+              
+              // Show boss defeated message
+              toast.success(`Boss Level ${this.state.bossesDefeated} defeated! +${baseScore + bossBonus} score, +5 gold`, {
+                position: "top-center",
+                duration: 3000,
+              });
+              
+              // Increase boss spawn threshold for next boss
+              this.state.bossSpawnThreshold += 50;
+            } else {
+              // Regular enemy destroyed
+              this.state.score++;
+              
+              // After first boss is defeated, count kills toward next boss spawn
+              if (this.state.bossesDefeated > 0) {
+                this.state.bossKillCounter++;
+              }
+            }
+            
+            // Increment enemies destroyed counter
+            this.state.enemiesDestroyed++;
+            
+            // Remove enemy
+            this.state.enemies.splice(j, 1);
+            
+            // Play sound
+            if (this.assets.enemyHitSound) {
+              try {
+                this.assets.enemyHitSound.play();
+              } catch (error) {
+                console.log("Error playing enemy hit sound:", error);
+              }
+            }
+          }
+          
+          break; // Exit inner loop after hit
+        }
+      }
+    }
+    
+    // Collision detection: player vs power-ups
+    for (let i = this.state.powerUps.length - 1; i >= 0; i--) {
+      let d = this.p.dist(
+        this.state.powerUps[i].x, 
+        this.state.powerUps[i].y, 
+        this.state.player.x, 
+        this.state.player.y
+      );
+      
+      if (d < this.state.player.r + this.state.powerUps[i].r) {
+        // Apply power-up effect based on type
+        if (this.state.powerUps[i].type === 0) { // Health
+          this.state.player.health = Math.min(100, this.state.player.health + 20);
+          this.triggerFlashEffect(this.p.color(0, 255, 100), 80);
+          toast.success("Health restored!", {
+            position: "bottom-center",
+            duration: 1500,
+          });
+        } else if (this.state.powerUps[i].type === 1) { // Shield
+          this.state.player.shield = 300; // Shield duration
+          this.triggerFlashEffect(this.p.color(30, 144, 255), 80);
+          toast.info("Shield activated!", {
+            position: "bottom-center",
+            duration: 1500,
+          });
+        } else if (this.state.powerUps[i].type === 2) { // Rapid fire
+          this.state.shootDelay = 150; // Temporarily reduce cooldown
+          this.triggerFlashEffect(this.p.color(255, 220, 0), 80);
+          setTimeout(() => {
+            this.state.shootDelay = 300; // Reset after 5 seconds
+          }, 5000);
+          toast.info("Rapid fire activated!", {
+            position: "bottom-center",
+            duration: 1500,
+          });
+        } else if (this.state.powerUps[i].type === 3) { // Triple shot
+          this.state.tripleShot = 300; // Triple shot duration (frames)
+          this.triggerFlashEffect(this.p.color(180, 90, 255), 80);
+          toast.info("Triple shot activated!", {
+            position: "bottom-center",
+            duration: 1500,
+          });
+        } else if (this.state.powerUps[i].type === 4) { // Bomb
+          // Create a large explosion that destroys all enemies on screen
+          let explosion = new Explosion(
+            this.p,
+            this.state.player.x,
+            this.state.player.y - 100,
+            150,
+            this.p.color(255, 100, 30, 200)
+          );
+          this.state.explosions.push(explosion);
+          
+          // Add strong screen shake and distortion for bomb
+          this.triggerScreenShake(30);
+          this.triggerDistortionEffect(this.p.width/2, this.p.height/2, 40, 90);
+          
+          // Add flash effect for bomb
+          this.triggerFlashEffect(this.p.color(255, 100, 30), 120);
+          
+          // Clear all enemies
+          for (let enemy of this.state.enemies) {
+            this.state.score++; // Increase score for each enemy destroyed
+            
+            // Create smaller explosions at each enemy position
+            let enemyExplosion = new Explosion(
+              this.p,
+              enemy.x,
+              enemy.y,
+              enemy.r * 2,
+              this.p.color(255, 100, 50, 200)
+            );
+            this.state.explosions.push(enemyExplosion);
+          }
+          
+          // Clear all enemy bullets
+          this.state.enemyBullets = [];
+          this.state.enemies = [];
+          
+          toast.info("Bomb detonated! All enemies destroyed!", {
+            position: "bottom-center",
+            duration: 2000,
+          });
+        } else if (this.state.powerUps[i].type === 5) { // Speed boost
+          this.state.speedBoost = 300; // Speed boost duration (frames)
+          this.triggerFlashEffect(this.p.color(0, 220, 220), 80);
+          toast.info("Speed boost activated!", {
+            position: "bottom-center",
+            duration: 1500,
+          });
+        }
+        
+        // Create particles at power-up position
+        for (let j = 0; j < 15; j++) {
+          let color;
+          if (this.state.powerUps[i].type === 0) color = this.p.color(0, 255, 100, 200);
+          else if (this.state.powerUps[i].type === 1) color = this.p.color(30, 144, 255, 200);
+          else if (this.state.powerUps[i].type === 2) color = this.p.color(255, 220, 0, 200);
+          else if (this.state.powerUps[i].type === 3) color = this.p.color(180, 90, 255, 200);
+          else if (this.state.powerUps[i].type === 4) color = this.p.color(255, 100, 30, 200);
+          else color = this.p.color(0, 220, 220, 200);
+          
+          let powerUpParticle = new Particle(
+            this.p,
+            this.state.powerUps[i].x,
+            this.state.powerUps[i].y,
+            this.p.random(-3, 3),
+            this.p.random(-3, 3),
+            color,
+            this.p.random(3, 8),
+            this.p.random(20, 30)
+          );
+          this.state.backgroundParticles.push(powerUpParticle);
+        }
+        
+        // Remove power-up
+        this.state.powerUps.splice(i, 1);
+        
+        // Play sound
+        if (this.assets.powerUpSound) {
+          try {
+            this.assets.powerUpSound.play();
+          } catch (error) {
+            console.log("Error playing power-up sound:", error);
+          }
+        }
+        
+        break; // Exit loop after collecting power-up
+      }
+    }
+    
+    // Collision detection: enemy bullets vs player
+    if (!this.state.gameOver && this.state.player.shield <= 0) { // Only check if no shield and game not over
+      for (let i = this.state.enemyBullets.length - 1; i >= 0; i--) {
+        let d = this.p.dist(
+          this.state.enemyBullets[i].x, 
+          this.state.enemyBullets[i].y, 
+          this.state.player.x, 
+          this.state.player.y
+        );
+        
+        if (d < this.state.player.r - 5) {
+          // Player takes damage
+          this.state.player.health -= 10;
+          
+          // Add hit flash effect
+          this.state.hitFlash = 15;
+          
+          // Add screen shake when player gets hit
+          this.triggerScreenShake(5);
+          
+          // Add flash effect when player gets hit
+          this.triggerFlashEffect(this.p.color(255, 0, 0), 60);
+          
+          // Create hit particles
+          for (let j = 0; j < 10; j++) {
+            let hitParticle = new Particle(
+              this.p,
+              this.state.enemyBullets[i].x,
+              this.state.enemyBullets[i].y,
+              this.p.random(-3, 3),
+              this.p.random(-3, 3),
+              this.p.color(255, 100, 100, 200),
+              this.p.random(3, 8),
+              this.p.random(20, 30)
+            );
+            this.state.backgroundParticles.push(hitParticle);
+          }
+          
+          // Remove bullet
+          this.state.enemyBullets.splice(i, 1);
+          
+          // Check if game over
+          if (this.state.player.health <= 0) {
+            this.gameOver();
+          }
+          
+          // Play sound
+          if (this.assets.playerHitSound) {
+            try {
+              this.assets.playerHitSound.play();
+            } catch (error) {
+              console.log("Error playing player hit sound:", error);
+            }
+          }
+          
+          break; // Exit loop after hit
+        }
+      }
+    }
+    
+    // Collision detection: player vs enemies
+    if (!this.state.gameOver && this.state.player.shield <= 0) { // Only check if no shield and game not over
+      for (let i = this.state.enemies.length - 1; i >= 0; i--) {
+        let d = this.p.dist(
+          this.state.enemies[i].x, 
+          this.state.enemies[i].y, 
+          this.state.player.x, 
+          this.state.player.y
+        );
+        
+        if (d < this.state.player.r + this.state.enemies[i].r - 15) {
+          // Player takes damage
+          this.state.player.health -= 20;
+          
+          // Add hit flash effect
+          this.state.hitFlash = 15;
+          
+          // Add screen shake when player gets hit
+          this.triggerScreenShake(8);
+          
+          // Add flash effect when player gets hit
+          this.triggerFlashEffect(this.p.color(255, 0, 0), 80);
+          
+          // Create explosion at collision point
+          let explosion = new Explosion(
+            this.p,
+            (this.state.player.x + this.state.enemies[i].x) / 2,
+            (this.state.player.y + this.state.enemies[i].y) / 2,
+            Math.max(20, this.state.enemies[i].r * 1.5),
+            this.p.color(255, 100, 50, 200)
+          );
+          this.state.explosions.push(explosion);
+          
+          // Check if game over
+          if (this.state.player.health <= 0) {
+            this.gameOver();
+            return;
+          }
+          
+          // Remove enemy
+          this.state.enemies.splice(i, 1);
+          
+          // Play sound
+          if (this.assets.playerHitSound) {
+            try {
+              this.assets.playerHitSound.play();
+            } catch (error) {
+              console.log("Error playing player hit sound:", error);
+            }
+          }
+          
+          break; // Exit loop after collision
+        }
+      }
+    }
+  }
+  
   update() {
     if (!this.state.gameStarted) {
-      // Draw background
-      this.p.background(30, 40, 30);
+      // Draw stars in the background
+      this.p.background(0);
+      for (let star of this.state.stars) {
+        star.update();
+        star.draw();
+      }
+      
+      // Display start game message
+      this.p.fill(255);
+      this.p.textSize(32);
+      this.p.textAlign(this.p.CENTER);
+      this.p.text("SPACE SHOOTER", this.p.width / 2, this.p.height / 2 - 40);
+      this.p.textSize(16);
+      this.p.text("Press ENTER to start", this.p.width / 2, this.p.height / 2 + 20);
+      this.p.text("Arrow keys to move, SPACE to shoot", this.p.width / 2, this.p.height / 2 + 50);
+      this.p.text("W to change weapons, S to open shop", this.p.width / 2, this.p.height / 2 + 80);
+      
+      // Check for ENTER key to start game
+      if (this.p.keyIsDown(13)) {
+        this.state.gameStarted = true;
+      }
       return;
     }
     
     if (this.state.gameOver) {
-      // Draw game over screen
-      this.p.background(30, 40, 30);
+      // Draw stars in the background
+      this.p.background(0);
+      for (let star of this.state.stars) {
+        star.update();
+        star.draw();
+      }
+      
+      // Display game over message
       this.p.fill(255, 0, 0);
       this.p.textSize(40);
       this.p.textAlign(this.p.CENTER);
       this.p.text("GAME OVER", this.p.width / 2, this.p.height / 2 - 40);
       this.p.fill(255);
       this.p.textSize(20);
-      this.p.text(`Score: ${this.state.score}`, this.p.width / 2, this.p.height / 2 + 20);
-      this.p.text(`Zombies Killed: ${this.state.zombiesKilled}`, this.p.width / 2, this.p.height / 2 + 50);
+      this.p.text(`Final Score: ${this.state.score}`, this.p.width / 2, this.p.height / 2 + 20);
+      this.p.text(`Enemies Destroyed: ${this.state.enemiesDestroyed}`, this.p.width / 2, this.p.height / 2 + 50);
+      this.p.text(`Bosses Defeated: ${this.state.bossesDefeated}`, this.p.width / 2, this.p.height / 2 + 80);
       this.p.textSize(16);
-      this.p.text("Press ENTER to play again", this.p.width / 2, this.p.height / 2 + 100);
+      this.p.text("Press ENTER to play again", this.p.width / 2, this.p.height / 2 + 130);
       
-      // Check for ENTER key to restart
+      // Check for ENTER key to restart game
       if (this.p.keyIsDown(13)) {
         this.resetGame();
       }
@@ -446,318 +1061,62 @@ export class GameEngine {
     }
     
     // Clear background
-    this.p.background(30, 40, 30);
+    this.p.background(0);
     
-    // If shop is open, draw shop and don't update game
+    // Update parallax layers
+    for (let layer of this.state.parallaxLayers) {
+      layer.update();
+      layer.draw();
+    }
+    
+    // Update stars
+    for (let star of this.state.stars) {
+      star.update();
+      star.draw();
+    }
+    
+    // If shop is open, draw shop instead of handling game logic
     if (this.state.shopOpen) {
       this.drawShop();
+      // Still handle input for shop interactions
+      this.handleInput();
       return;
     }
     
-    // Update game state based on current wave
-    this.updateWaveState();
-    
-    // Update soldier position based on mouse position
-    this.soldier.update(this.p.mouseX, this.p.mouseY);
-    
-    // Handle mouse click shooting
-    if (this.p.mouseIsPressed && this.state.ammo > 0) {
-      const weaponDamage = [10, 6, 8];
-      const didShoot = this.soldier.shoot(
-        this.zombies, 
-        this.bullets, 
-        this.state.weaponLevels,
-        weaponDamage[this.soldier.currentWeapon] * (1 + this.state.weaponLevels[this.soldier.currentWeapon] * 0.2)
-      );
-      
-      if (didShoot) {
-        // Reduce ammo
-        this.state.ammo--;
-        
-        // Add muzzle flash particles
-        this.createMuzzleFlash();
-      }
-    }
-    
-    // Handle keyboard input for weapon switching and reload
+    // Handle input
     this.handleInput();
     
-    // Update bullets
-    this.updateBullets();
+    // Spawn enemies
+    this.spawnEnemies();
     
-    // Update zombies
-    this.updateZombies();
+    // Spawn power-ups
+    this.spawnPowerUps();
     
-    // Update particles
-    this.updateParticles();
+    // Update all entities
+    this.updateEntities();
     
     // Check for collisions
     this.checkCollisions();
     
-    // Draw everything
-    this.drawGame();
+    // Apply visual effects
+    this.applyVisualEffects();
     
-    // Update UI state
-    this.updateUIState();
-  }
-  
-  updateWaveState() {
-    // If between waves and waiting period is over, start next wave
-    if (this.state.betweenWaves && this.p.millis() - this.state.waveCompleteTime > 5000) {
-      this.startNextWave();
+    // Update player shield opacity for visual feedback
+    if (this.state.player.shield > 0) {
+      this.state.player.shield--;
+      this.state.shieldOpacity = this.p.map(this.state.player.shield, 0, 300, 0, 150);
+    } else {
+      this.state.shieldOpacity = 0;
     }
     
-    // If wave is active, spawn zombies
-    if (this.state.waveActive && this.zombies.length < 20 && this.state.zombiesRemaining > 0) {
-      if (this.p.millis() - this.state.lastSpawnTime > this.state.spawnInterval) {
-        this.spawnZombie();
-        this.state.lastSpawnTime = this.p.millis();
-        this.state.zombiesRemaining--;
-      }
-    }
-    
-    // Check if wave is complete
-    if (this.state.waveActive && this.state.zombiesRemaining === 0 && this.zombies.length === 0) {
-      this.completeWave();
-    }
-  }
-  
-  startNextWave() {
-    this.state.wave++;
-    this.state.zombiesPerWave = Math.floor(10 + this.state.wave * 2);
-    this.state.zombiesRemaining = this.state.zombiesPerWave;
-    this.state.waveActive = true;
-    this.state.betweenWaves = false;
-    
-    // Reduce spawn interval as waves progress, but not less than 500ms
-    this.state.spawnInterval = Math.max(500, 2000 - this.state.wave * 100);
-    
-    // Show wave start message
-    toast.info(`Wave ${this.state.wave} started!`, {
-      position: "top-center",
-      duration: 3000,
-    });
-    
-    // Spawn a boss every 5 waves
-    if (this.state.wave % 5 === 0) {
-      this.spawnBossZombie();
-      
-      toast.error(`WARNING: Boss zombie approaching!`, {
-        position: "top-center",
-        duration: 4000,
-      });
-    }
-  }
-  
-  completeWave() {
-    this.state.waveActive = false;
-    this.state.betweenWaves = true;
-    this.state.waveCompleteTime = this.p.millis();
-    
-    // Award gold for completing wave
-    const waveBonus = this.state.wave * 10;
-    this.state.gold += waveBonus;
-    
-    // Show wave complete message
-    toast.success(`Wave ${this.state.wave} complete! +${waveBonus} gold`, {
-      position: "top-center",
-      duration: 3000,
-    });
-  }
-  
-  handleInput() {
-    // Switch weapons with number keys
-    if (this.p.keyIsPressed) {
-      if (this.p.key === '1') {
-        this.soldier.currentWeapon = 0;
-        this.p.keyIsPressed = false;
-      } else if (this.p.key === '2' && this.state.shopItems[1].purchased) {
-        this.soldier.currentWeapon = 1;
-        this.p.keyIsPressed = false;
-      } else if (this.p.key === '3' && this.state.shopItems[2].purchased) {
-        this.soldier.currentWeapon = 2;
-        this.p.keyIsPressed = false;
-      }
-      
-      // Reload with R key
-      if (this.p.key === 'r' || this.p.key === 'R') {
-        const maxAmmo = [30, 20, 50];
-        this.state.ammo = maxAmmo[this.soldier.currentWeapon];
-        this.state.maxAmmo = maxAmmo[this.soldier.currentWeapon];
-        this.p.keyIsPressed = false;
-        
-        // Show reload message
-        toast.info(`Reloaded ${this.getWeaponName(this.soldier.currentWeapon)}`, {
-          position: "bottom-center",
-          duration: 1500,
-        });
-      }
-      
-      // Toggle shop with S key
-      if (this.p.key === 's' || this.p.key === 'S') {
-        // Only allow shop during between-wave periods
-        if (this.state.betweenWaves) {
-          this.state.shopOpen = !this.state.shopOpen;
-          this.p.keyIsPressed = false;
-        } else {
-          toast.error("Shop only available between waves", {
-            position: "bottom-center",
-            duration: 2000,
-          });
-        }
-      }
-    }
-  }
-  
-  getWeaponName(index: number): string {
-    const weaponNames = ["Pistol", "Shotgun", "Assault Rifle"];
-    return weaponNames[index];
-  }
-  
-  updateBullets() {
-    for (let i = this.bullets.length - 1; i >= 0; i--) {
-      const isOutOfBounds = this.bullets[i].update();
-      this.bullets[i].draw();
-      
-      if (isOutOfBounds) {
-        this.bullets.splice(i, 1);
-      }
-    }
-  }
-  
-  updateZombies() {
-    for (let i = this.zombies.length - 1; i >= 0; i--) {
-      const reachedBase = this.zombies[i].update();
-      
-      if (reachedBase) {
-        // Damage the base
-        const damage = this.zombies[i].isBoss ? 20 : 5;
-        const baseDestroyed = this.base.takeDamage(damage);
-        
-        // Update base health in state
-        this.state.baseHealth = this.base.health;
-        
-        // Create blood particles
-        this.createBloodSplatter(this.zombies[i].x, this.zombies[i].y);
-        
-        // Remove the zombie
-        this.zombies.splice(i, 1);
-        
-        // Check if base destroyed
-        if (baseDestroyed) {
-          this.gameOver();
-        }
-      }
-    }
-  }
-  
-  updateParticles() {
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      const isDead = this.particles[i].update();
-      this.particles[i].draw();
-      
-      if (isDead) {
-        this.particles.splice(i, 1);
-      }
-    }
-  }
-  
-  checkCollisions() {
-    // Check bullet-zombie collisions
-    for (let i = this.bullets.length - 1; i >= 0; i--) {
-      for (let j = this.zombies.length - 1; j >= 0; j--) {
-        const distance = this.p.dist(
-          this.bullets[i].x,
-          this.bullets[i].y,
-          this.zombies[j].x,
-          this.zombies[j].y
-        );
-        
-        if (distance < this.zombies[j].size / 2) {
-          // Zombie hit by bullet
-          const killed = this.zombies[j].takeDamage(this.bullets[i].damage);
-          
-          // Create hit particles
-          this.createBulletImpact(this.bullets[i].x, this.bullets[i].y);
-          
-          // Remove bullet
-          this.bullets.splice(i, 1);
-          
-          if (killed) {
-            // Award points and gold
-            const pointValue = this.zombies[j].isBoss ? 50 : 10;
-            const goldValue = this.zombies[j].isBoss ? 20 : 1;
-            
-            this.state.score += pointValue;
-            this.state.gold += goldValue;
-            this.state.zombiesKilled++;
-            
-            if (this.zombies[j].isBoss) {
-              this.state.bossesDefeated++;
-            }
-            
-            // Create death particles
-            this.createZombieDeathEffect(this.zombies[j].x, this.zombies[j].y, this.zombies[j].size);
-            
-            // Remove zombie
-            this.zombies.splice(j, 1);
-          }
-          
-          break; // Skip to next bullet
-        }
-      }
-    }
-  }
-  
-  drawGame() {
-    // Draw ground texture
-    this.p.fill(50, 60, 50);
-    this.p.rect(0, 0, this.p.width, this.p.height);
-    
-    // Draw base
-    this.base.draw();
-    
-    // Draw zombies
-    for (const zombie of this.zombies) {
-      zombie.draw();
-    }
-    
-    // Draw soldier
-    this.soldier.draw();
+    // Draw all entities
+    this.drawEntities();
     
     // Draw UI
     this.drawUI();
-  }
-  
-  drawUI() {
-    // Draw ammo
-    this.p.fill(255);
-    this.p.textSize(20);
-    this.p.textAlign(this.p.LEFT);
-    this.p.text(`Ammo: ${this.state.ammo}/${this.state.maxAmmo}`, 20, 30);
     
-    // Draw current weapon
-    const weaponNames = ["Pistol", "Shotgun", "Assault Rifle"];
-    this.p.text(`Weapon: ${weaponNames[this.soldier.currentWeapon]}`, 20, 60);
-    
-    // Draw score and gold
-    this.p.textAlign(this.p.RIGHT);
-    this.p.text(`Score: ${this.state.score}`, this.p.width - 20, 30);
-    this.p.text(`Gold: ${this.state.gold}`, this.p.width - 20, 60);
-    
-    // Draw wave information
-    this.p.textAlign(this.p.CENTER);
-    this.p.text(`Wave ${this.state.wave}`, this.p.width / 2, 30);
-    
-    if (this.state.betweenWaves) {
-      const timeLeft = Math.ceil((5000 - (this.p.millis() - this.state.waveCompleteTime)) / 1000);
-      this.p.textSize(24);
-      this.p.text(`Next wave in ${timeLeft}s`, this.p.width / 2, 70);
-      this.p.textSize(18);
-      this.p.text(`Press S to open shop`, this.p.width / 2, 100);
-    } else {
-      this.p.text(`Zombies left: ${this.state.zombiesRemaining + this.zombies.length}`, this.p.width / 2, 60);
-    }
+    // Gradually reduce visual effects
+    this.updateVisualEffects();
   }
   
   drawShop() {
@@ -805,15 +1164,9 @@ export class GameEngine {
       this.p.text(`${item.price} Gold`, this.p.width / 2 + 180, y + 25);
       
       // Draw status (purchased or available)
-      if (item.type === 'weapon') {
-        if (item.purchased) {
-          this.p.fill(0, 255, 0);
-          this.p.text("Purchased", this.p.width / 2 + 180, y + 50);
-          this.p.text(`Level ${this.state.weaponLevels[i]}`, this.p.width / 2 + 180, y + 70);
-        } else {
-          this.p.fill(30, 144, 255);
-          this.p.text("Available", this.p.width / 2 + 180, y + 50);
-        }
+      if (item.type === 'weapon' && item.purchased) {
+        this.p.fill(0, 255, 0);
+        this.p.text("Purchased", this.p.width / 2 + 180, y + 50);
       } else {
         this.p.fill(30, 144, 255);
         this.p.text("Available", this.p.width / 2 + 180, y + 50);
@@ -827,332 +1180,274 @@ export class GameEngine {
     this.p.fill(200);
     this.p.textAlign(this.p.CENTER);
     this.p.textSize(16);
-    this.p.text("Press 1-4 to purchase items, S to close shop", this.p.width / 2, this.p.height - 50);
-    
-    // Handle shop keypresses
-    if (this.p.keyIsPressed) {
-      const keyNum = parseInt(this.p.key);
-      if (!isNaN(keyNum) && keyNum >= 1 && keyNum <= this.state.shopItems.length) {
-        this.p.keyIsPressed = false; // Reset to prevent multiple purchases
-        this.buyShopItem(keyNum - 1);
+    this.p.text("Press 1-5 to purchase items, S to close shop", this.p.width / 2, this.p.height - 50);
+  }
+  
+  drawEntities() {
+    // Draw player
+    if (!this.state.gameOver) {
+      this.state.player.draw();
+      
+      // Draw shield effect if active
+      if (this.state.shieldOpacity > 0) {
+        this.p.noFill();
+        this.p.stroke(30, 144, 255, this.state.shieldOpacity);
+        this.p.strokeWeight(3);
+        this.p.ellipse(this.state.player.x, this.state.player.y, this.state.player.r * 2.5);
+        this.p.strokeWeight(1);
       }
+    }
+    
+    // Draw enemies
+    for (let enemy of this.state.enemies) {
+      enemy.draw();
+    }
+    
+    // Draw player bullets
+    for (let bullet of this.state.bullets) {
+      bullet.draw();
+    }
+    
+    // Draw enemy bullets
+    for (let bullet of this.state.enemyBullets) {
+      bullet.draw();
+    }
+    
+    // Draw power-ups
+    for (let powerUp of this.state.powerUps) {
+      powerUp.draw();
+    }
+    
+    // Draw background particles
+    for (let particle of this.state.backgroundParticles) {
+      particle.draw();
+    }
+    
+    // Draw explosions
+    for (let explosion of this.state.explosions) {
+      explosion.draw();
     }
   }
   
-  spawnZombie() {
-    // Determine spawn position (from edge of screen)
-    let x, y;
-    const edge = this.p.random(4); // 0: top, 1: right, 2: bottom, 3: left
+  drawUI() {
+    // Health bar
+    this.p.noStroke();
+    this.p.fill(50);
+    this.p.rect(20, 20, 200, 20, 5);
+    const healthColor = this.p.color(
+      this.p.map(this.state.player.health, 0, 100, 255, 0),
+      this.p.map(this.state.player.health, 0, 100, 0, 255),
+      0
+    );
+    this.p.fill(healthColor);
+    this.p.rect(20, 20, this.p.map(this.state.player.health, 0, 100, 0, 200), 20, 5);
+    this.p.fill(255);
+    this.p.textSize(14);
+    this.p.textAlign(this.p.CENTER);
+    this.p.text(`Health: ${this.state.player.health}`, 120, 35);
     
-    if (edge < 1) { // Top
-      x = this.p.random(this.p.width);
-      y = -30;
-    } else if (edge < 2) { // Right
-      x = this.p.width + 30;
-      y = this.p.random(this.p.height);
-    } else if (edge < 3) { // Bottom
-      x = this.p.random(this.p.width);
-      y = this.p.height + 30;
-    } else { // Left
-      x = -30;
-      y = this.p.random(this.p.height);
+    // Gold display
+    this.p.fill(255, 215, 0); // Gold color
+    this.p.textAlign(this.p.LEFT);
+    this.p.textSize(18);
+    this.p.text(`Gold: ${this.state.gold}`, 20, 60);
+    
+    // Score
+    this.p.fill(255);
+    this.p.textAlign(this.p.RIGHT);
+    this.p.textSize(20);
+    this.p.text(`Score: ${this.state.score}`, this.p.width - 20, 30);
+    
+    // Shop hint
+    this.p.textSize(14);
+    this.p.text("Press S for Shop", this.p.width - 20, 60);
+  }
+  
+  applyVisualEffects() {
+    // Apply screen shake
+    if (this.state.visualEffects.screenShake > 0) {
+      const shakeAmount = this.state.visualEffects.screenShakeIntensity * 
+                          (this.state.visualEffects.screenShake / 30);
+      this.p.translate(
+        this.p.random(-shakeAmount, shakeAmount),
+        this.p.random(-shakeAmount, shakeAmount)
+      );
     }
     
-    // Determine zombie type (more difficult types as waves progress)
-    let type = 0;
-    const typeRoll = this.p.random();
+    // Apply flash effect
+    if (this.state.visualEffects.flashEffect.active) {
+      this.p.noStroke();
+      this.p.fill(
+        this.p.red(this.state.visualEffects.flashEffect.color),
+        this.p.green(this.state.visualEffects.flashEffect.color),
+        this.p.blue(this.state.visualEffects.flashEffect.color),
+        this.state.visualEffects.flashEffect.alpha
+      );
+      this.p.rect(0, 0, this.p.width, this.p.height);
+    }
     
-    if (this.state.wave >= 10) {
-      if (typeRoll < 0.3) type = 0; // 30% regular
-      else if (typeRoll < 0.6) type = 1; // 30% fast
-      else type = 2; // 40% tanky
-    } else if (this.state.wave >= 5) {
-      if (typeRoll < 0.5) type = 0; // 50% regular
-      else if (typeRoll < 0.8) type = 1; // 30% fast
-      else type = 2; // 20% tanky
-    } else if (this.state.wave >= 3) {
-      if (typeRoll < 0.7) type = 0; // 70% regular
-      else if (typeRoll < 0.9) type = 1; // 20% fast
-      else type = 2; // 10% tanky
+    // Apply distortion effect
+    if (this.state.visualEffects.distortionEffect.active) {
+      // Simple distortion effect - not implemented fully
+      // Will need shader implementation for real distortion
+    }
+  }
+  
+  updateVisualEffects() {
+    // Update screen shake
+    if (this.state.visualEffects.screenShake > 0) {
+      this.state.visualEffects.screenShake -= 1;
     } else {
-      type = 0; // 100% regular for early waves
+      this.state.visualEffects.screenShake = 0;
     }
     
-    const zombie = new Zombie(
-      this.p,
-      x,
-      y,
-      this.base.x,
-      this.base.y,
-      type
-    );
-    
-    this.zombies.push(zombie);
-  }
-  
-  spawnBossZombie() {
-    // Spawn boss from random edge
-    let x, y;
-    const edge = this.p.random(4); // 0: top, 1: right, 2: bottom, 3: left
-    
-    if (edge < 1) { // Top
-      x = this.p.width / 2;
-      y = -50;
-    } else if (edge < 2) { // Right
-      x = this.p.width + 50;
-      y = this.p.height / 2;
-    } else if (edge < 3) { // Bottom
-      x = this.p.width / 2;
-      y = this.p.height + 50;
-    } else { // Left
-      x = -50;
-      y = this.p.height / 2;
-    }
-    
-    const boss = new Zombie(
-      this.p,
-      x,
-      y,
-      this.base.x,
-      this.base.y,
-      0, // Type doesn't matter for boss
-      true // isBoss = true
-    );
-    
-    this.zombies.push(boss);
-  }
-  
-  createBulletImpact(x: number, y: number) {
-    for (let i = 0; i < 5; i++) {
-      const particle = new Particle(
-        this.p,
-        x,
-        y,
-        this.p.random(-2, 2),
-        this.p.random(-2, 2),
-        this.p.color(255, 200, 0),
-        this.p.random(3, 6),
-        this.p.random(10, 20)
-      );
+    // Update flash effect
+    if (this.state.visualEffects.flashEffect.active) {
+      this.state.visualEffects.flashEffect.alpha -= 
+        this.state.visualEffects.flashEffect.alpha / 
+        this.state.visualEffects.flashEffect.duration * 2;
       
-      this.particles.push(particle);
-    }
-  }
-  
-  createZombieDeathEffect(x: number, y: number, size: number) {
-    const particleCount = size / 2;
-    
-    for (let i = 0; i < particleCount; i++) {
-      const particle = new Particle(
-        this.p,
-        x + this.p.random(-size/2, size/2),
-        y + this.p.random(-size/2, size/2),
-        this.p.random(-3, 3),
-        this.p.random(-3, 3),
-        this.p.color(0, 100, 0),
-        this.p.random(3, 8),
-        this.p.random(20, 40)
-      );
-      
-      this.particles.push(particle);
-    }
-    
-    // Add blood particles
-    this.createBloodSplatter(x, y);
-  }
-  
-  createBloodSplatter(x: number, y: number) {
-    for (let i = 0; i < 15; i++) {
-      const particle = new Particle(
-        this.p,
-        x,
-        y,
-        this.p.random(-3, 3),
-        this.p.random(-3, 3),
-        this.p.color(150, 0, 0),
-        this.p.random(3, 8),
-        this.p.random(30, 60)
-      );
-      
-      this.particles.push(particle);
-    }
-  }
-  
-  createMuzzleFlash() {
-    const muzzleX = this.soldier.x + this.p.cos(this.soldier.angle) * this.soldier.size;
-    const muzzleY = this.soldier.y + this.p.sin(this.soldier.angle) * this.soldier.size;
-    
-    for (let i = 0; i < 5; i++) {
-      const particle = new Particle(
-        this.p,
-        muzzleX,
-        muzzleY,
-        this.p.cos(this.soldier.angle) * this.p.random(1, 3) + this.p.random(-1, 1),
-        this.p.sin(this.soldier.angle) * this.p.random(1, 3) + this.p.random(-1, 1),
-        this.p.color(255, 200, 0),
-        this.p.random(3, 8),
-        this.p.random(5, 10)
-      );
-      
-      this.particles.push(particle);
-    }
-  }
-  
-  buyShopItem(index: number) {
-    const item = this.state.shopItems[index];
-    
-    // Check if player has enough gold
-    if (this.state.gold < item.price) {
-      toast.error(`Not enough gold! You need ${item.price} gold.`, {
-        position: "bottom-center",
-        duration: 2000,
-      });
-      return;
-    }
-    
-    // Process purchase based on item type
-    if (item.type === 'repair') {
-      this.base.repair(25);
-      this.state.baseHealth = this.base.health;
-      this.state.gold -= item.price;
-      
-      toast.success(`Base repaired! Health: ${this.state.baseHealth}`, {
-        position: "bottom-center",
-        duration: 1500,
-      });
-    }
-    else if (item.type === 'weapon') {
-      if (item.purchased) {
-        // Upgrade weapon
-        const weaponIndex = index;
-        const currentLevel = this.state.weaponLevels[weaponIndex];
-        
-        // Max level check (5)
-        if (currentLevel >= 5) {
-          toast.info(`${item.name} is already at maximum level!`, {
-            position: "bottom-center",
-            duration: 2000,
-          });
-          return;
-        }
-        
-        // Calculate upgrade price based on level
-        const upgradePrice = item.price / 2 * (currentLevel + 1);
-        
-        // Check if player has enough gold for upgrade
-        if (this.state.gold < upgradePrice) {
-          toast.error(`Not enough gold! You need ${upgradePrice} gold.`, {
-            position: "bottom-center",
-            duration: 2000,
-          });
-          return;
-        }
-        
-        // Apply the upgrade
-        this.state.weaponLevels[weaponIndex]++;
-        this.state.gold -= upgradePrice;
-        
-        toast.success(`${item.name} upgraded to Level ${this.state.weaponLevels[weaponIndex]}!`, {
-          position: "bottom-center",
-          duration: 2000,
-        });
-      } else {
-        // Purchase new weapon
-        item.purchased = true;
-        this.state.gold -= item.price;
-        
-        // Set weapon level to 1
-        const weaponIndex = index;
-        this.state.weaponLevels[weaponIndex] = 1;
-        
-        // Switch to newly purchased weapon
-        this.soldier.currentWeapon = weaponIndex;
-        
-        toast.success(`${item.name} purchased and equipped!`, {
-          position: "bottom-center",
-          duration: 2000,
-        });
+      if (this.state.visualEffects.flashEffect.alpha <= 1) {
+        this.state.visualEffects.flashEffect.active = false;
       }
     }
-    else if (item.type === 'ammo') {
-      // Reset ammo based on current weapon
-      const maxAmmo = [30, 20, 50];
-      this.state.ammo = maxAmmo[this.soldier.currentWeapon];
-      this.state.maxAmmo = maxAmmo[this.soldier.currentWeapon];
-      this.state.gold -= item.price;
+    
+    // Update distortion effect
+    if (this.state.visualEffects.distortionEffect.active) {
+      this.state.visualEffects.distortionEffect.intensity -= 
+        this.state.visualEffects.distortionEffect.intensity / 
+        this.state.visualEffects.distortionEffect.duration * 2;
       
-      toast.success(`Ammo refilled!`, {
-        position: "bottom-center",
-        duration: 1500,
-      });
-    }
-  }
-  
-  updateUIState() {
-    // Update game state for UI
-    this.state.baseHealth = this.base.health;
-    this.state.player.health = this.soldier.health;
-  }
-  
-  gameOver() {
-    this.state.gameOver = true;
-    
-    // Show game over message
-    toast.error(`Game Over! Final score: ${this.state.score}`, {
-      position: "top-center",
-      duration: 5000,
-    });
-  }
-  
-  resetGame() {
-    // Reset base and soldier
-    this.base = new Base(this.p, this.p.width / 2, this.p.height / 2);
-    this.soldier = new Soldier(this.p, this.p.width / 2, this.p.height / 2);
-    
-    // Update player reference
-    this.state.player = this.soldier;
-    
-    // Clear entities
-    this.zombies = [];
-    this.bullets = [];
-    this.particles = [];
-    
-    // Reset game state
-    this.state.score = 0;
-    this.state.gold = 0;
-    this.state.baseHealth = 100;
-    this.state.maxBaseHealth = 100;
-    this.state.zombiesKilled = 0;
-    this.state.bossesDefeated = 0;
-    this.state.wave = 1;
-    this.state.zombiesPerWave = 10;
-    this.state.zombiesRemaining = 10;
-    this.state.waveActive = true;
-    this.state.betweenWaves = false;
-    this.state.shopOpen = false;
-    this.state.gameOver = false;
-    this.state.gameStarted = true;
-    this.state.ammo = 30;
-    this.state.maxAmmo = 30;
-    
-    // Reset weapon levels and purchases
-    this.state.weaponLevels = [1, 0, 0];
-    for (let item of this.state.shopItems) {
-      if (item.type === 'weapon') {
-        item.purchased = false;
+      if (this.state.visualEffects.distortionEffect.intensity <= 0.1) {
+        this.state.visualEffects.distortionEffect.active = false;
       }
     }
+  }
+  
+  triggerScreenShake(intensity: number, duration: number = 30) {
+    // Only trigger if the new shake would be stronger than current
+    if (intensity > this.state.visualEffects.screenShakeIntensity || 
+        this.state.visualEffects.screenShake <= 0) {
+      this.state.visualEffects.screenShake = duration;
+      this.state.visualEffects.screenShakeIntensity = intensity;
+    }
+  }
+  
+  triggerFlashEffect(color: p5.Color, alpha: number = 100, duration: number = 30) {
+    this.state.visualEffects.flashEffect.active = true;
+    this.state.visualEffects.flashEffect.color = color;
+    this.state.visualEffects.flashEffect.alpha = alpha;
+    this.state.visualEffects.flashEffect.duration = duration;
+  }
+  
+  triggerDistortionEffect(centerX: number, centerY: number, intensity: number = 10, duration: number = 30) {
+    this.state.visualEffects.distortionEffect.active = true;
+    this.state.visualEffects.distortionEffect.centerX = centerX;
+    this.state.visualEffects.distortionEffect.centerY = centerY;
+    this.state.visualEffects.distortionEffect.intensity = intensity;
+    this.state.visualEffects.distortionEffect.duration = duration;
   }
   
   windowResized() {
     // Handle window resize
-    // Update base position to center
-    this.base.x = this.p.width / 2;
-    this.base.y = this.p.height / 2;
   }
   
   keyReleased(keyCode: number) {
     // Handle key released
     return true;
+  }
+  
+  resetGame() {
+    // Reset game state
+    this.state.weaponLevels = [0, 0, 0, 0]; // Reset weapon levels
+    this.state.player = new Player(this.p, this.p.width / 2, this.p.height - 100, 60, 40, this.state.weaponLevels);
+    this.state.enemies = [];
+    this.state.bullets = [];
+    this.state.enemyBullets = [];
+    this.state.score = 0;
+    this.state.gold = 0;
+    this.state.enemiesDestroyed = 0;
+    this.state.bossActive = false;
+    this.state.lastBossSpawn = 0;
+    this.state.bossSpawnThreshold = 50;
+    this.state.bossesDefeated = 0;
+    this.state.bossKillCounter = 0;
+    this.state.lastShotTime = 0;
+    this.state.shootDelay = 300;
+    this.state.lastEnemySpawnTime = 0;
+    this.state.enemySpawnInterval = 1500;
+    this.state.hitFlash = 0;
+    this.state.backgroundParticles = [];
+    this.state.gameOver = false;
+    this.state.explosions = [];
+    this.state.shieldOpacity = 0;
+    this.state.powerUps = [];
+    this.state.powerUpLastSpawnTime = 0;
+    this.state.powerUpSpawnInterval = 10000;
+    this.state.tripleShot = 0;
+    this.state.speedBoost = 0;
+    this.state.shopOpen = false;
+    
+    // Reset purchased status for weapons
+    for (let item of this.state.shopItems) {
+      if (item.type === 'weapon') {
+        item.purchased = false;
+      }
+    }
+    
+    this.state.visualEffects = {
+      screenShake: 0,
+      screenShakeIntensity: 0,
+      flashEffect: {
+        active: false,
+        color: this.p.color(255),
+        alpha: 0,
+        duration: 0
+      },
+      distortionEffect: {
+        active: false,
+        intensity: 0,
+        duration: 0,
+        centerX: 0,
+        centerY: 0
+      }
+    };
+  }
+  
+  gameOver() {
+    if (!this.state.gameOver) {
+      this.state.gameOver = true;
+      
+      // Create multiple explosions at player's ship
+      for (let i = 0; i < 3; i++) {
+        let explosion = new Explosion(
+          this.p,
+          this.state.player.x + this.p.random(-30, 30),
+          this.state.player.y + this.p.random(-30, 30),
+          this.p.random(30, 50),
+          this.p.color(255, 100, 50, 200)
+        );
+        this.state.explosions.push(explosion);
+      }
+      
+      // Add screen shake and flash
+      this.triggerScreenShake(20, 60);
+      this.triggerFlashEffect(this.p.color(255, 0, 0), 150, 60);
+      
+      // Play game over sound
+      if (this.assets.gameOverSound) {
+        try {
+          this.assets.gameOverSound.play();
+        } catch (error) {
+          console.log("Error playing game over sound:", error);
+        }
+      }
+      
+      // Show game over toast
+      toast.error(`Game Over! Score: ${this.state.score}`, {
+        position: "top-center",
+        duration: 5000,
+      });
+    }
   }
 }

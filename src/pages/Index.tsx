@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import p5 from "p5";
 import { GameEngine } from "../game/GameEngine";
@@ -9,24 +9,28 @@ import ShopInterface from "../game/ui/ShopInterface";
 import GameOverScreen from "../game/ui/GameOverScreen";
 import GameStartScreen from "../game/ui/GameStartScreen";
 import WeaponIndicator from "../game/ui/WeaponIndicator";
-import { useGameState } from "../game/hooks/useGameState";
 
 const Index = () => {
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const p5ContainerRef = useRef<HTMLDivElement>(null);
   const gameEngineRef = useRef<GameEngine | null>(null);
-  const keyHandlerInitializedRef = useRef(false);
   
-  // Use our custom hook for game state management
-  const { 
-    gameState,
-    updateGameState,
-    handleToggleShop,
-    handleBuyItem,
-    handleStartGame,
-    handleRestartGame,
-    weaponNames
-  } = useGameState(gameEngineRef);
+  // Game state
+  const [playerHealth, setPlayerHealth] = useState(100);
+  const [maxHealth, setMaxHealth] = useState(100);
+  const [score, setScore] = useState(0);
+  const [gold, setGold] = useState(0);
+  const [enemiesDestroyed, setEnemiesDestroyed] = useState(0);
+  const [bossesDefeated, setBossesDefeated] = useState(0);
+  const [shopOpen, setShopOpen] = useState(false);
+  const [shopItems, setShopItems] = useState([]);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [currentWeapon, setCurrentWeapon] = useState(0);
+  const [weaponLevels, setWeaponLevels] = useState([0, 0, 0, 0]); // Levels for all weapons
+  
+  // Weapon names array
+  const weaponNames = ["Standard Gun", "Shotgun", "Laser", "Plasma Cannon"];
   
   useEffect(() => {
     let myP5: p5;
@@ -49,7 +53,23 @@ const Index = () => {
           gameEngine.update();
           
           // Update React state with game engine state
-          updateGameState();
+          if (gameEngine.state) {
+            setPlayerHealth(gameEngine.state.player?.health || 0);
+            setMaxHealth(100); // Assuming max health is 100
+            setScore(gameEngine.state.score);
+            setGold(gameEngine.state.gold);
+            setEnemiesDestroyed(gameEngine.state.enemiesDestroyed);
+            setBossesDefeated(gameEngine.state.bossesDefeated);
+            setShopOpen(gameEngine.state.shopOpen);
+            setShopItems(gameEngine.state.shopItems);
+            setGameStarted(gameEngine.state.gameStarted);
+            setGameOver(gameEngine.state.gameOver);
+            setWeaponLevels(gameEngine.state.weaponLevels || [0, 0, 0, 0]);
+            
+            if (gameEngine.state.player) {
+              setCurrentWeapon(gameEngine.state.player.currentWeapon);
+            }
+          }
         };
         
         p.windowResized = () => {
@@ -60,56 +80,43 @@ const Index = () => {
         p.keyReleased = () => {
           return gameEngine.keyReleased(p.keyCode);
         };
-
-        // Add keyPressed event handler to make controls more responsive
-        p.keyPressed = () => {
-          // Only handle ENTER key if not initialized yet
-          if (!keyHandlerInitializedRef.current && p.keyCode === p.ENTER && !gameState.gameStarted) {
-            handleStartGame();
-            keyHandlerInitializedRef.current = true;
-            
-            // Reset after a delay
-            setTimeout(() => {
-              keyHandlerInitializedRef.current = false;
-            }, 1000);
-            
-            return false; // Prevent default behavior
-          }
-          
-          // Pass other key events to the game engine if game is started
-          if (gameState.gameStarted && !gameState.gameOver) {
-            // Allow default behavior for game keys
-            return true;
-          }
-          
-          return true; // Allow default behavior for other keys
-        };
       };
       
       myP5 = new p5(sketch, p5ContainerRef.current);
     }
     
-    // No additional event listeners needed here
-    
     return () => {
       myP5?.remove();
     };
-  }, [updateGameState, gameState.gameStarted, gameState.gameOver, handleStartGame]);
+  }, []);
 
-  const { 
-    playerHealth, 
-    maxHealth, 
-    score, 
-    gold, 
-    zombiesKilled,
-    bossesDefeated,
-    shopOpen,
-    shopItems,
-    gameStarted,
-    gameOver,
-    currentWeapon,
-    weaponLevels
-  } = gameState;
+  // Handle shop toggle
+  const handleToggleShop = () => {
+    if (gameEngineRef.current) {
+      gameEngineRef.current.state.shopOpen = !shopOpen;
+    }
+  };
+  
+  // Handle buying shop items
+  const handleBuyItem = (index: number) => {
+    if (gameEngineRef.current) {
+      gameEngineRef.current.buyShopItem(index);
+    }
+  };
+  
+  // Handle game start
+  const handleStartGame = () => {
+    if (gameEngineRef.current) {
+      gameEngineRef.current.state.gameStarted = true;
+    }
+  };
+  
+  // Handle game restart
+  const handleRestartGame = () => {
+    if (gameEngineRef.current) {
+      gameEngineRef.current.resetGame();
+    }
+  };
 
   return (
     <motion.div 
@@ -173,7 +180,7 @@ const Index = () => {
         {gameOver && (
           <GameOverScreen 
             score={score}
-            zombiesKilled={zombiesKilled}
+            enemiesDestroyed={enemiesDestroyed}
             bossesDefeated={bossesDefeated}
             onRestart={handleRestartGame}
           />
