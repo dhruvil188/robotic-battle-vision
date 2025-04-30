@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Zap, Circle, ArrowUp } from 'lucide-react';
+import { Zap, Circle, ArrowUp, Sword, Gun, Bomb, Shield } from 'lucide-react';
 
 interface WeaponIndicatorProps {
   currentWeapon: number;
@@ -15,17 +15,22 @@ const WeaponIndicator: React.FC<WeaponIndicatorProps> = ({ currentWeapon, weapon
     return colors[index % colors.length];
   };
 
-  // Weapon specific icons (we would use different icons for each weapon type)
+  // Enhanced weapon-specific icons with more distinct visuals
   const getWeaponIcon = (index: number) => {
-    if (index === 2) return <Zap size={18} className={getWeaponColor(index)} />;
-    return <Circle size={18} className={getWeaponColor(index)} />;
+    switch(index) {
+      case 0: return <Gun size={18} className={getWeaponColor(index)} />;
+      case 1: return <Sword size={18} className={getWeaponColor(index)} />;
+      case 2: return <Zap size={18} className={getWeaponColor(index)} />;
+      case 3: return <Bomb size={18} className={getWeaponColor(index)} />;
+      default: return <Circle size={18} className={getWeaponColor(index)} />;
+    }
   };
 
   // Get current weapon level
   const currentLevel = weaponLevels[currentWeapon];
   const levelDisplay = currentLevel > 0 ? ` Mk${currentLevel}` : "";
 
-  // Generate level indicators (stars or up arrows)
+  // Generate level indicators (stars or up arrows) with enhanced visuals
   const renderLevelIndicators = (level: number) => {
     if (level === 0) return null;
     
@@ -38,34 +43,36 @@ const WeaponIndicator: React.FC<WeaponIndicatorProps> = ({ currentWeapon, weapon
     );
   };
 
-  // Get damage text
+  // Enhanced damage text calculation with better scaling
   const getDamageText = () => {
     const level = weaponLevels[currentWeapon];
     let baseDamage = 0;
     
-    // Base damage values per weapon
+    // Improved base damage values and scaling per weapon
     switch(currentWeapon) {
       case 0: // Standard gun
-        baseDamage = 10 + (level * 3);
+        baseDamage = 10 + (level * 5);
         break;
       case 1: // Shotgun (per pellet)
-        baseDamage = 6 + (level * 2);
+        baseDamage = 8 + (level * 3);
         break;
       case 2: // Laser
-        baseDamage = 20 + (level * 4);
+        baseDamage = 20 + (level * 8);
         break;
       case 3: // Plasma
-        baseDamage = 40 + (level * 5);
+        baseDamage = 45 + (level * 12);
         break;
     }
     
     return baseDamage;
   };
 
-  // Make the component more compact for the top right position
+  // Make the component more compact and visually appealing for the top right position
   return (
-    <div className="bg-black/70 p-1.5 rounded-lg shadow-md border border-slate-700 flex items-center gap-2">
-      {getWeaponIcon(currentWeapon)}
+    <div className="bg-black/70 p-1.5 rounded-lg shadow-md border border-slate-700 flex items-center gap-2 backdrop-blur-sm">
+      <div className={`rounded-full p-0.5 bg-slate-800 border ${getWeaponColor(currentWeapon).replace('text-', 'border-')}`}>
+        {getWeaponIcon(currentWeapon)}
+      </div>
       <div>
         <div className={`text-xs font-bold ${getWeaponColor(currentWeapon)} flex items-center gap-1`}>
           {weaponNames[currentWeapon]}{levelDisplay}

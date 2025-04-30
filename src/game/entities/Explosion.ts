@@ -10,9 +10,10 @@ export class Explosion implements ExplosionType {
   color: p5.Color;
   particles: ParticleType[];
   life: number;
+  explosionType: number;
   private p: p5;
 
-  constructor(p: p5, x: number, y: number, size: number, color: p5.Color) {
+  constructor(p: p5, x: number, y: number, size: number, color: p5.Color, explosionType: number = 0) {
     this.p = p;
     this.x = x;
     this.y = y;
@@ -20,13 +21,35 @@ export class Explosion implements ExplosionType {
     this.color = color;
     this.particles = [];
     this.life = 40;
+    this.explosionType = explosionType;
     
-    // Create explosion particles
-    for (let i = 0; i < 20; i++) {
+    // Create explosion particles with different patterns based on type
+    const particleCount = explosionType === 1 ? 40 : explosionType === 2 ? 60 : 20;
+    
+    for (let i = 0; i < particleCount; i++) {
       let angle = this.p.random(this.p.TWO_PI);
       let speed = this.p.random(1, 3);
+      
+      // Special patterns for different explosion types
+      if (explosionType === 1) {
+        // Ring explosion
+        angle = (i / particleCount) * this.p.TWO_PI;
+        speed = this.p.random(2, 4);
+      } else if (explosionType === 2) {
+        // Spiral explosion
+        angle = (i / particleCount) * this.p.TWO_PI * 3;
+        speed = 1.5 + (i / particleCount) * 3;
+      }
+      
       let vx = Math.cos(angle) * speed;
       let vy = Math.sin(angle) * speed;
+      
+      // Create varying sized and colored particles
+      const particleColor = explosionType === 1 ? 
+        this.p.lerpColor(this.color, this.p.color(255, 255, 200), this.p.random()) : 
+        explosionType === 2 ? 
+        this.p.lerpColor(this.color, this.p.color(50, 50, 255), this.p.random()) : 
+        this.color;
       
       let particle = new Particle(
         this.p,
@@ -34,11 +57,30 @@ export class Explosion implements ExplosionType {
         this.y, 
         vx, 
         vy,
-        this.color,
-        this.p.random(5, 15),
-        this.p.random(20, 40)
+        particleColor,
+        this.p.random(5, explosionType === 2 ? 20 : 15),
+        this.p.random(20, explosionType === 1 ? 50 : 40)
       );
       this.particles.push(particle);
+    }
+    
+    // Add special effect particles for big explosions
+    if (explosionType === 2) {
+      // Add shockwave particles
+      for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * this.p.TWO_PI;
+        const shockwaveParticle = new Particle(
+          this.p,
+          this.x,
+          this.y,
+          Math.cos(angle) * 0.5,
+          Math.sin(angle) * 0.5,
+          this.p.color(255, 255, 255, 150),
+          size * 2,
+          30
+        );
+        this.particles.push(shockwaveParticle);
+      }
     }
   }
   

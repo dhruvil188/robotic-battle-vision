@@ -32,25 +32,39 @@ const Index = () => {
   // Controls tooltip shown state
   const [controlsShown, setControlsShown] = useState(false);
   
-  // Weapon names array
-  const weaponNames = ["Standard Gun", "Shotgun", "Laser", "Plasma Cannon"];
+  // Enhanced weapon names array
+  const weaponNames = ["Pulse Blaster", "Nova Shotgun", "Quantum Laser", "Plasma Cannon"];
 
   // Show controls tooltip when game starts
   useEffect(() => {
     if (gameStarted && !controlsShown) {
       setControlsShown(true);
       
-      // Show toast notifications for controls
-      toast.info("Press W to switch weapons", {
-        position: "bottom-center",
-        duration: 5000,
-      });
-      
-      setTimeout(() => {
-        toast.info("Press S to open the shop", {
+      // Show enhanced toast notifications for controls with better UI
+      toast.info(
+        <div className="flex flex-col">
+          <span className="font-bold mb-1">CONTROLS:</span>
+          <span>Press <kbd className="bg-gray-700 px-1 rounded">W</kbd> to switch weapons</span>
+        </div>, 
+        {
           position: "bottom-center",
           duration: 5000,
-        });
+          className: "bg-indigo-900/90"
+        }
+      );
+      
+      setTimeout(() => {
+        toast.info(
+          <div className="flex flex-col">
+            <span className="font-bold mb-1">TIP:</span>
+            <span>Press <kbd className="bg-gray-700 px-1 rounded">S</kbd> to open the shop</span>
+          </div>,
+          {
+            position: "bottom-center",
+            duration: 5000,
+            className: "bg-indigo-900/90"
+          }
+        );
       }, 6000);
     }
   }, [gameStarted, controlsShown]);
@@ -177,6 +191,9 @@ const Index = () => {
                 </div>
               </div>
               
+              {/* Wave announcer (shows when new wave starts) */}
+              <div className="self-center pointer-events-auto mt-12" id="wave-announcer"></div>
+              
               {/* Controls legend (shows at game start) */}
               {gameStarted && !gameOver && controlsShown && (
                 <div className="self-end pointer-events-auto mb-16 mr-4">
@@ -184,6 +201,7 @@ const Index = () => {
                     <div><span className="text-white font-bold">W</span>: Switch Weapon</div>
                     <div><span className="text-white font-bold">S</span>: Open Shop</div>
                     <div><span className="text-white font-bold">Space</span>: Shoot</div>
+                    <div><span className="text-white font-bold">←↑→↓</span>: Move</div>
                   </div>
                 </div>
               )}
